@@ -6,6 +6,8 @@
 > 说明：文档清单里的 `project-issues-narrative.md`（连字符版）**不存在**，仓库里只有 `project_issues_narrative.md`（下划线版），已按后者审计。
 >
 > **2026-11-04 更新：P0-1（max_w 默认 72）、P0-2（slogan 分支）、P0-3（鸭子类型 export_meta）、P2（侧车 `size`）、P1（.gitignore 补 `.DS_Store`）已修复，测试 26 → 38 全绿，详见 §六「修复前后对照」。**
+>
+> **2026-11-04 第二轮修复：透明背景 alpha 掩码（P1 #17）、`max_h` 高度上限（P1 #4）、PNG/JPG/RGBA/P 测试（P1 #16）、`demo_grid.py` 防覆写（P1 #20）已完成，测试 38 → 45 全绿，详见 §七。**
 
 ---
 
@@ -28,7 +30,7 @@
 | 1 | `build_grid(src, charset, max_w) → PixelGrid`；输入 图像/Slogan → 字符网格；"尺寸受控，前景/背景标记清晰" | docx §六（三）表 2 B 行 | 已满足 | `grid.py:120-151`；`tests/test_grid.py:47`（test_returns_pixelgrid_with_consistent_shape） | 否 |
 | 2 | PixelGrid "内含宽度、每格坐标及其前景/背景标记" | docx §六（二）第 2 段 | 已满足 | `shared/types.py:25-32`（GridCell）、`:43-54`（PixelGrid 字段） | 否 |
 | 3 | "每个格子对应源码中的一个字符位，前景格标记为需占用、背景格标记为可留空" | docx §二（二）第 1 步 | 已满足 | `grid.py:173-180`（fg/level/ch 赋值）；`GridCell.fg/ch`；`test_fg_bg_marks_clear`（tests:62） | 否 |
-| 4 | 骨架期验收："输入任意 PNG，程序能输出**尺寸受控**的字符网格并正确区分前景与背景" | docx §四（二）第 1 句 | 部分满足 | 宽度受控（`grid.py:165` `tw=min(g.width,max_w)`，`test_width_capped_by_max_w` tests:56）；**高度无上限**：50×2000 图 @72 → `50×1000`（实测）；白底黑图默认 `density=0.797`（需手动 `invert`） | 是（P1：`max_h` + 文档写清） |
+| 4 | 骨架期验收："输入任意 PNG，程序能输出**尺寸受控**的字符网格并正确区分前景与背景" | docx §四（二）第 1 句 | **已修复**（加 `max_h`） | 宽度受控（`grid.py` `tw=min(g.width,max_w)`，`test_width_capped_by_max_w`）；高度现在可用 `max_h` 限制：50×2000 @72 原来 `50×1000`，加 `max_h=200` → `10×200`（实测）；`max_h=None` 保持旧行为；白底黑图仍默认 `density=0.797`（需 `invert`） | 否 |
 | 5 | "支持自定义字符集与分辨率上限" | docx §五（一）B 段 | 已满足 | `charset` 参数 + `validate_charset`（`grid.py:69-101`）；`max_w` 校验 `_validate_max_w`（`:103-117`） | 否 |
 | 6 | "补 charset 单宽白名单，13 条测试常绿" | PM:201（§9 B①）；PM:96（§3 第 5 条"1 格=1 字符、只可打印 ASCII、禁 Tab/CRLF/全角"） | 已满足 | `test_charset_accepts_printable_ascii`、`_rejects_tab`、`_rejects_cjk_and_emoji`、`_rejects_empty_and_non_str`、`_duplicates_are_deduped`（tests:139-186） | 否 |
 | 7 | "确认 `grid_rows`/`fg_rows` 的写侧车格式与 **`max_w` 默认 72**" | PM:201 | **已修复**（默认 72） | 修复前 `grid.py` `max_w: int = 80`；修复后 `max_w: int = 72`（`grid.py:132`），`test_default_max_w_is_72` 断言 cat → 72×36/1126 且 `meta.max_w=72` | 否 |
@@ -40,11 +42,11 @@
 | 13 | "D8 前保证演示用 cat 固定不变，D12 提供第二、三组保形验收图案" | PM:201（§9 B③）；PM:23 | 已满足 | `test_cat_fixture_numbers_are_stable`（tests:283，锁 72×36/1126）；`samples/logo.png` + `slogan.txt` 作为第二、三组 | 否 |
 | 14 | "行列 0 基、1 格=1 字符、只可打印 ASCII、禁 Tab/CRLF/全角、图案行不 rstrip" | PM:96；narrative:284 | 部分满足 | charset 侧已强制（`grid.py:69-101`）；**slogan 输入侧未约束**（CJK 见 #15）；行不 rstrip 成立（`types.py:55-59` 直接拼字符） | 是（P1：定 slogan 口径） |
 | 15 | Slogan 文本分支稳定（非 ASCII / 超长 / 空）——文档未单列，B 自述"长口号自动折成多行"（`README.md:44-45`） | `ascii-art-executable_B/README.md:43-45` | **已修复** | 修复后：79 字 @72 → 70×20/fg=304（@48 → 48×43/fg=342）、300 字与中文/emoji/Tab 全部 `ValueError`；修复前：空文本 → `ValueError`（tests:129）；`"中文"` @72 → 52×14、`d=0.077`，字形是两排 `@@@@` 方块（字体无 CJK → .notdef）；`"HELLO "*8`（48 字符）→ **72×2、fg=0**；长度 ≥256 → **`OSError [Errno 63]`**（`grid.py:138`） | **是（P0/P1）** |
-| 16 | 支持 PNG / JPG | docx §五（一）B 段（"PNG/JPG…"）、`README.md:39` | 已满足（功能层） | 实测 L/RGB/RGBA/P/1 五种模式 + PNG/JPG 都出 `24×6 / fg=38`；`I;16` 也能跑（fg=48，16 位饱和后阈值行为不同）；**但测试只用 L PNG**，无 JPG/RGBA 用例 | 是（P1：补测试） |
-| 17 | 透明背景如何定义 | 文档未定义 | 缺失（未定义） | RGBA 透明底 + 白图形 → fg=102（alpha 被忽略、等效黑底）；透明底 + **黑**图形 → `fg=0`（图案整体消失） | 是（P1：定语义+测试） |
+| 16 | 支持 PNG / JPG | docx §五（一）B 段（"PNG/JPG…"）、`README.md:39` | 已满足（功能层 + 测试） | 实测 L/RGB/RGBA/P/1 五种模式 + PNG/JPG 都出 `24×6 / fg=38`；`I;16` 也能跑（fg=48，16 位饱和后阈值行为不同）；**已补** `test_jpeg_input`、`test_rgba_opaque_input`、`test_palette_png_input` | 否 |
+| 17 | 透明背景如何定义 | 文档未定义 | **已修复**（alpha = 形状掩码） | 修复前：透明底 + 黑图形 → `fg=0`（整块消失）。修复后：任一 `alpha<128` 时 alpha 作掩码，透明=背景（不看 RGB、不参与 `invert`）、不透明=前景且 level≥1；透明底黑方块 `10×5 / fg=18`，白方块同样 18；全不透明 RGBA 仍走亮度（fg=38） | 否 |
 | 18 | 分辨率上限语义：宽不超 `max_w`，还是宽高都不超？ | docx 表 2 B 行"尺寸受控"；PM:96 | 部分满足 | 代码只限宽：`grid.py:165` `tw=min(g.width,max_w)`；高度由 `th=round(tw*h/w/cell_aspect)`（`:166`）推导，无上限。文档只写"尺寸受控/宽度不超过约束"（`README.md:40`），**没写高度** | 是（P1：文档明确 + 可选 `max_h`） |
 | 19 | `demo/` 放图案、演示脚本 | docx §七；PM:145（目录约定） | 已满足 | `demo/cat.png`（560×560 L，4192 B）；生成脚本 `scripts/demo_grid.py` | 否 |
-| 20 | `scripts/demo_grid.py` 会覆写 `demo/cat.png` | 已知隐患（本轮核查） | 部分满足（今天无害） | `scripts/demo_grid.py:84` `make_cat(out / "cat.png")` → `make_cat` 内 `im.save(path)`（`:76`）；实测重生成 sha256 `39e91a4f…` 与现有 `demo/cat.png` **完全一致**，所以现在覆写不变；但绘图代码一改就会静默改 golden | 是（P1：`--out` / 存在即跳过） |
+| 20 | `scripts/demo_grid.py` 会覆写 `demo/cat.png` | 已知隐患（本轮核查） | **已修复**（`--out` / 默认跳过） | `scripts/demo_grid.py` 现在用 argparse：`--out PATH` 指定输出、已存在时默认打印 `skip:` 并继续用现有文件、`--force` 才覆盖；`demo/cat.png` 不再被无意识重写 | 否 |
 | 21 | README 应覆盖：接口说明、样例表、依赖版本、运行方式 | docx §五（一）A（README 归属 A）+ B 自述契约 | **已修复**（README 重写） | 修复后 README 覆盖新 API、侧车 9 键、样例表、解释器坑，删掉 `CanvasPlan`；修复前：`README.md:36-47` 有接口/参数/运行方式；**缺** `export_meta/load_meta/validate_charset/fg_rows`（`grid.py:321-426`）、缺样例表、缺 Pillow 版本；`README.md:51` 仍写 `CanvasPlan` 参与冻结（PM:14 已决议删除）；`README.md:22-32` 的 venv 指引与 PM:143 冲突 | 是（P1：更新 README） |
 | 22 | v2 "PNG 一键转字符画体验也由其负责" | docx §五（一）B 末句 | 缺失 | 只有 `scripts/demo_grid.py`（写死画猫），没有接受任意 PNG 的入口/CLI | 是（P2） |
 | 23 | CLI 子命令 `build/verify/detect` | docx §二（一）；PM:203-205（E 负责） | 无需 B 负责 | B 无 `cli.py`，符合分工；`samples/make_samples.py` 只是离线脚本 | 否 |
@@ -165,3 +167,17 @@
 | 样例数字 | cat 72×36/1126/0.4344 | **完全不变**（6 组数字逐项一致，重跑幂等） | `samples/make_samples.py` 输出 |
 
 修复涉及文件：`ascii_art_executable/grid.py`、`tests/test_grid.py`、`README.md`、`.gitignore`、`samples/*.meta.json`、`samples/README.md`。
+
+---
+
+## 七、第二轮修复（2026-11-04）
+
+| 项 | 修复前 | 修复后 | 证据 |
+|---|---|---|---|
+| 透明背景 | RGBA 透明底 + 黑图形 → `fg=0`（图案整块消失） | alpha 作形状掩码：`alpha<128` → 背景（不看 RGB）；不透明 → 前景、level 抬到 ≥1；透明底黑方块 `10×5`、`fg=18`，白方块同样 18 | `test_transparent_black_art_uses_alpha` |
+| 高度上限 | 只有 `max_w`，50×2000 @72 → `50×1000` | 新增 `max_h`（默认 `None`）：同图 @72 + `max_h=200` → `10×200`；`max_h=None` 行为不变 | `test_max_h_caps_tall_image`、`test_max_h_none_keeps_legacy_behaviour` |
+| 格式/模式测试 | 只有 L PNG 用例 | 补 JPG / 不透明 RGBA / 调色板 P 三个用例 | `test_jpeg_input`、`test_rgba_opaque_input`、`test_palette_png_input` |
+| demo 覆写 | 每次运行都重写 `demo/cat.png` | `--out` 指定路径，存在即 skip，`--force` 才覆盖 | `scripts/demo_grid.py` |
+| 测试数 | 38 | **45 全绿**（新增 7） | `pytest -q` → `45 passed in 1.28s` |
+
+修复涉及文件：`ascii_art_executable/grid.py`（`max_h`、`_open_image`、alpha 掩码）、`tests/test_grid.py`（+7）、`scripts/demo_grid.py`（argparse）、`README.md`、`README.zh-CN.md`、`docs/B_part_gap_checklist_EN.md`。

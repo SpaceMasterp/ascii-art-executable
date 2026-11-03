@@ -439,6 +439,92 @@ def test_meta_rejects_size_mismatch(tmp_path: Path) -> None:
         raise AssertionError("expected ValueError for a size mismatch")
 
 
+# ------------------------------------------- formats / modes (P1: PNG, JPG, P) --
+
+def test_jpeg_input(tmp_path: Path) -> None:
+    p = tmp_path / "photo.jpg"
+    im = Image.new("RGB", (200, 100), (0, 0, 0))
+    ImageDraw.Draw(im).ellipse([50, 20, 150, 80], fill=(255, 255, 255))
+    im.save(p, quality=95)
+    g = build_grid(p, max_w=24)
+    assert g.width == 24 and g.height == 6
+    assert 30 <= g.fg_count <= 45      # JPEG ringing moves a few edge cells
+
+
+def test_rgba_opaque_input(tmp_path: Path) -> None:
+    p = tmp_path / "rgba.png"
+    im = Image.new("RGBA", (200, 100), (0, 0, 0, 255))
+    ImageDraw.Draw(im).ellipse([50, 20, 150, 80], fill=(255, 255, 255, 255))
+    im.save(p)
+    g = build_grid(p, max_w=24)
+    # fully opaque alpha is not a shape mask → plain luminance path
+    assert g.fg_count == 38
+    assert g.at(12, 3).fg is True
+
+
+def test_palette_png_input(tmp_path: Path) -> None:
+    p = tmp_path / "palette.png"
+    im = Image.new("L", (200, 100), 0)
+    ImageDraw.Draw(im).ellipse([50, 20, 150, 80], fill=255)
+    im.convert("P").save(p)
+    g = build_grid(p, max_w=24)
+    assert g.fg_count == 38
+
+
+# ------------------------------------------------- alpha as mask (P1: bug fix) --
+
+def _transparent_square(tmp_path: Path, colour: int) -> Path:
+    """100×100 transparent RGBA canvas with an opaque 60×60 square (20..79)."""
+    p = tmp_path / f"alpha_{colour}.png"
+    im = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    ImageDraw.Draw(im).rectangle([20, 20, 79, 79], fill=(colour, colour, colour, 255))
+    im.save(p)
+    return p
+
+
+def test_transparent_black_art_uses_alpha(tmp_path: Path) -> None:
+    # Regression: convert("L") dropped alpha, so a black logo on a transparent
+    # canvas produced fg == 0 (the whole pattern vanished).
+    black = build_grid(_transparent_square(tmp_path, 0), max_w=10)
+    white = build_grid(_transparent_square(tmp_path, 255), max_w=10)
+    assert (black.width, black.height) == (10, 5)
+    assert black.fg_count == 18, black.fg_count      # 6 cols × 3 rows of the square
+    assert white.fg_count == black.fg_count          # luminance must not matter
+    assert all(c.ch != " " for c in black.cells if c.fg)
+
+
+# ----------------------------------------------------------- max_h height cap --
+
+def test_max_h_caps_tall_image(tmp_path: Path) -> None:
+    p = tmp_path / "tall.png"
+    Image.new("L", (50, 2000), 255).save(p)
+    assert build_grid(p, max_w=72).height == 1000    # legacy: no cap
+    capped = build_grid(p, max_w=72, max_h=200)
+    assert capped.height == 200
+    assert capped.width <= 72
+    assert (capped.width, capped.height) == (10, 200)
+
+
+def test_max_h_none_keeps_legacy_behaviour(tmp_path: Path) -> None:
+    p = tmp_path / "tall.png"
+    Image.new("L", (50, 2000), 255).save(p)
+    assert build_grid(p, max_w=72, max_h=None).height == 1000
+    assert (build_grid(p, max_w=72, max_h=None).width,
+            build_grid(p, max_w=72, max_h=None).height) == \
+           (build_grid(p, max_w=72).width, build_grid(p, max_w=72).height)
+
+
+def test_max_h_validation(tmp_path: Path) -> None:
+    p = _circle(tmp_path / "c.png")
+    for bad in (0, -5, "200", 12.5, True):
+        try:
+            build_grid(p, max_w=24, max_h=bad)
+        except ValueError as exc:
+            assert "max_h" in str(exc), str(exc)
+        else:
+            raise AssertionError(f"expected ValueError for max_h={bad!r}")
+
+
 # ------------------------------------------------------------- standalone --
 
 if __name__ == "__main__":

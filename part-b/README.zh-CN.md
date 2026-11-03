@@ -16,6 +16,9 @@
   `fg=True` 且 `ch=" "` 是合法状态——这也是掩码必须单独导出的原因。
 - **字符集校验**：一个字形 = 一个可打印单列 ASCII 字符（`0x20`–`0x7E`）；
   Tab / 全角 / 中文 / emoji 一律 `ValueError`。
+- **Alpha**：图片的 alpha 通道确实存在透明像素（任一像素 `alpha < 128`）时，alpha 就是形状掩码——
+  透明像素一律背景（不看 RGB 值），所以"透明底 + 黑色 logo"不会再整块消失；不透明像素为前景，
+  其密度档位被抬到 ≥ 1，深色图形也能显示字形。完全不透明的 RGBA 仍走亮度阈值。
 - **口号**：只接受可打印 ASCII，按 `max_w` 折行，长度上限 `MAX_TEXT_CHARS = 200`；
   空文本 / 超长 / 非 ASCII 都抛 `ValueError`，并指出具体位置（如 `slogan[3] = '中' (U+4E2D)`）。
 - **侧车**：`export_meta()` 写 `<out>.meta.json`；`load_meta()` 读回并校验。
@@ -23,7 +26,7 @@
 ## 接口
 
 ```python
-build_grid(src, charset=" .:-=+*#%@", max_w=72,
+build_grid(src, charset=" .:-=+*#%@", max_w=72, max_h=None,
            threshold=128.0, invert=False, cell_aspect=2.0) -> PixelGrid
 ```
 
@@ -32,6 +35,7 @@ build_grid(src, charset=" .:-=+*#%@", max_w=72,
 | `src` | 图像路径（PNG/JPG 等 Pillow 支持的格式）**或**口号文本；不是已存在文件路径的字符串按文本处理 |
 | `charset` | 疏→密字符集，首字符视为空白（默认 `" .:-=+*#%@"`） |
 | `max_w` | 宽度上限，正整数，**默认 72** |
+| `max_h` | 可选高度上限，正整数或 `None`（**默认 `None`** = 不限）；两个上限同时生效时按更紧的比例缩放，保证宽 ≤ `max_w` 且高 ≤ `max_h` |
 | `threshold` | 灰度 0–255 的前/背景阈值（亮 ≥ 阈值 = 前景） |
 | `invert` | 反转前/背景（深色主体、浅色背景时用） |
 | `cell_aspect` | 终端字符高宽比，默认 2.0 |
@@ -45,8 +49,12 @@ build_grid(src, charset=" .:-=+*#%@", max_w=72,
 cd part-b
 python3 -m venv .venv
 ./.venv/bin/python -m pip install -r requirements.txt
-./.venv/bin/python -m pytest tests -q          # 38 passed
-./.venv/bin/python tests/test_grid.py          # 同一批 38 条，无需 pytest
+./.venv/bin/python -m pytest tests -q          # 45 passed
+./.venv/bin/python tests/test_grid.py          # 同一批 45 条，无需 pytest
+
+# 演示：打印猫的字符网格；已存在的 cat.png 默认跳过，--force 才覆盖
+./.venv/bin/python scripts/demo_grid.py 72
+./.venv/bin/python scripts/demo_grid.py 72 --out /tmp/cat_demo.png --force
 ```
 
 任意 Python ≥ 3.10 且能 `import PIL` 即可。（macOS 已知坑：从别的机器拷来的 `.venv`
@@ -104,12 +112,13 @@ B 的 `PixelGrid` 是 6 字段版的**超集**：`max_w` 是唯一多出来的�
 
 ## 测试
 
-38 条全部通过（`pytest -q tests`）：
+45 条全部通过（`pytest -q tests`）：
 
 ```
-38 passed in 0.21s
+45 passed in 0.48s
 ```
 
-覆盖：图像路径（宽度上限、前后景标记、反色、字符高宽比）、字符集校验（可打印 ASCII、
-Tab/中文/emoji 拒绝、去重）、掩码导出（`fg=True` 但字形为空）、侧车往返、鸭子类型导出、
-以及口号契约（短文本、79 字、300 字、空白、中文/emoji/Tab、超长单词硬切）。
+覆盖：图像路径（宽/高上限、前后景标记、反色、字符高宽比）、PNG/JPG/RGBA/调色板输入、
+alpha 作掩码（透明底 + 黑方块）、字符集校验（可打印 ASCII、Tab/中文/emoji 拒绝、去重）、
+掩码导出（`fg=True` 但字形为空）、侧车往返、鸭子类型导出，以及口号契约（短文本、79 字、
+300 字、空白、中文/emoji/Tab、超长单词硬切）。

@@ -2,7 +2,7 @@
 
 Contract (启动方案 §六·三, owner B):
 
-    build_grid(src, charset, max_w) -> PixelGrid
+    build_grid(src, charset, max_w, max_h) -> PixelGrid
 
 - ``src``     : image file path (PNG/JPG/…) **or** slogan text (anything that is
                 not an existing file path is treated as text). Slogan text must
@@ -15,6 +15,9 @@ Contract (启动方案 §六·三, owner B):
                 full-width, CJK and emoji raise ``ValueError``.
 - ``max_w``   : resolution cap (positive int, **default 72**) — the grid width
                 never exceeds it (分辨率上限); other values raise ``ValueError``.
+- ``max_h``   : optional height cap (positive int or ``None``, default ``None``).
+                With both caps set the image shrinks by the tighter ratio, so
+                width ≤ ``max_w`` and height ≤ ``max_h``.
 
 Backward-compatible extras (defaults keep the contract behaviour):
 - ``threshold``   : gray level 0-255 splitting 前景 from 背景; bright ≥ threshold
@@ -23,6 +26,13 @@ Backward-compatible extras (defaults keep the contract behaviour):
 - ``cell_aspect`` : terminal character cells are ~2x taller than wide; dividing
                     the target height by this keeps the rendered art from
                     looking squashed. Default 2.0.
+
+Alpha semantics: an image whose alpha channel actually has transparency
+(any pixel with ``alpha < 128``) uses alpha as the shape mask — transparent
+pixels are background regardless of their RGB value and ``invert`` is ignored
+for them; opaque pixels are foreground and their ramp level is clamped to ≥ 1 so
+dark artwork still shows a glyph. Fully opaque RGBA images keep the luminance
+behaviour.
 
 Sidecar (B's slice, see :func:`export_meta`): ``grid_rows`` **and** ``fg_rows``
 (plus ``cols`` / ``rows`` / ``max_w`` / ``fg_count`` / ``density``). Both row
@@ -109,17 +119,24 @@ def validate_charset(charset: "str | None") -> str:
     return normalised
 
 
-def _validate_max_w(max_w) -> int:
-    """Return ``max_w`` as a positive int, else raise ``ValueError``."""
+def _validate_max_w(max_w, *, name: str = "max_w") -> int:
+    """Return the cap as a positive int, else raise ``ValueError``."""
     if isinstance(max_w, bool) or not isinstance(max_w, (int, float)):
-        raise ValueError(f"max_w must be a positive integer, got {max_w!r}")
+        raise ValueError(f"{name} must be a positive integer, got {max_w!r}")
     if isinstance(max_w, float):
         if not max_w.is_integer():
-            raise ValueError(f"max_w must be a positive integer, got {max_w!r}")
+            raise ValueError(f"{name} must be a positive integer, got {max_w!r}")
         max_w = int(max_w)
     if max_w <= 0:
-        raise ValueError(f"max_w must be >= 1, got {max_w}")
+        raise ValueError(f"{name} must be >= 1, got {max_w}")
     return int(max_w)
+
+
+def _validate_max_h(max_h) -> "int | None":
+    """Return ``max_h`` as a positive int, or ``None`` meaning "unbounded"."""
+    if max_h is None:
+        return None
+    return _validate_max_w(max_h, name="max_h")
 
 
 def _validate_slogan(text: "str | None") -> str:
@@ -160,6 +177,7 @@ def build_grid(
     src: "str | Path",
     charset: str = DEFAULT_CHARSET,
     max_w: int = 72,
+    max_h: "int | None" = None,
     threshold: float = 128.0,
     invert: bool = False,
     cell_aspect: float = 2.0,
@@ -167,12 +185,22 @@ def build_grid(
     """Downsample an image or slogan into a fg/bg-marked character grid.
 
     ``max_w`` defaults to **72** (the D8 golden scale: ``demo/cat.png`` →
-    72×36). Raises ``ValueError`` for an empty/illegal charset (see
-    :func:`validate_charset`), a non-positive ``max_w``, or blank / non-ASCII /
-    over-long slogan text (see :func:`_validate_slogan`).
+    72×36); ``max_h=None`` means "no height cap". When both caps are set the
+    image is scaled down by the tighter ratio, so width ≤ ``max_w`` **and**
+    height ≤ ``max_h``.
+
+    Images with a real alpha channel use it as the shape mask: pixels with
+    ``alpha < 128`` are background regardless of their RGB value (a black logo
+    on a transparent canvas no longer disappears), and ``invert`` is ignored for
+    those pixels. Fully opaque RGBA images keep the plain luminance behaviour.
+
+    Raises ``ValueError`` for an empty/illegal charset (see
+    :func:`validate_charset`), a non-positive ``max_w``/``max_h``, or blank /
+    non-ASCII / over-long slogan text (see :func:`_validate_slogan`).
     """
     charset = validate_charset(charset)
     max_w = _validate_max_w(max_w)
+    max_h = _validate_max_h(max_h)
     threshold = min(255.0, max(0.0, float(threshold)))
 
     # ``Path("A"*300).is_file()`` raises OSError(ENAMETOOLONG) on macOS; the text
@@ -186,14 +214,34 @@ def build_grid(
             is_file = False
 
     if is_file:
-        image = Image.open(path).convert("L")
+        image, alpha = _open_image(path)
         source = str(path)
     else:
         text = _validate_slogan(src if isinstance(src, str) else str(src))
         image = _render_slogan(text, max_w)
+        alpha = None
         source = text
 
-    return _grid_from_image(image, charset, max_w, threshold, invert, cell_aspect, source)
+    return _grid_from_image(image, charset, max_w, threshold, invert, cell_aspect,
+                            source, alpha=alpha, max_h=max_h)
+
+
+def _open_image(path: Path) -> "tuple[Image.Image, Image.Image | None]":
+    """Return ``(grayscale, alpha_mask)``; ``alpha_mask`` is ``None`` if opaque.
+
+    Pillow's ``convert("L")`` throws the alpha channel away, so a transparent
+    canvas turns black and swallows dark artwork. When the file really carries
+    transparency (some pixel with ``alpha < 128``) we keep the alpha channel and
+    let it decide foreground/background; an opaque RGBA image falls back to the
+    normal luminance threshold.
+    """
+    im = Image.open(path)
+    alpha = None
+    if "A" in im.getbands() or (im.mode == "P" and "transparency" in im.info):
+        alpha = im.convert("RGBA").getchannel("A")
+        if alpha.getextrema()[0] >= 128:  # fully opaque → not a shape mask
+            alpha = None
+    return im.convert("L"), alpha
 
 
 # ---------------------------------------------------------------------------
@@ -208,21 +256,41 @@ def _grid_from_image(
     invert: bool,
     cell_aspect: float,
     source: str,
+    *,
+    alpha: "Image.Image | None" = None,
+    max_h: "int | None" = None,
 ) -> PixelGrid:
     g = im.convert("L")
     tw = min(g.width, max_w)
     th = max(1, round(tw * g.height / g.width / max(1.0, cell_aspect)))
+    if max_h is not None and th > max_h:
+        # Shrink by the tighter ratio: height hits the cap, width follows.
+        th = max_h
+        tw = max(1, min(tw, round(th * max(1.0, cell_aspect) * g.width / g.height)))
     if (tw, th) != (g.width, g.height):
-        g = g.resize((tw, th), Image.BOX if tw < g.width else Image.NEAREST)
+        resample = Image.BOX if tw < g.width else Image.NEAREST
+        g = g.resize((tw, th), resample)
+        if alpha is not None:
+            alpha = alpha.resize((tw, th), resample)
 
     n = len(charset)
     cells: list[GridCell] = []
     px = g.load()
+    ap = alpha.load() if alpha is not None else None
     for y in range(th):
         for x in range(tw):
             v = px[x, y]
-            fg = (v >= threshold) ^ bool(invert)
-            level = 0 if n == 1 else min(n - 1, int(round(v / 255 * (n - 1))))
+            if ap is not None:
+                # Alpha is the shape mask: opaque = foreground, transparent =
+                # background, luminance/invert do not get a vote. A dark glyph
+                # still needs a visible ramp level, hence the max(1, level).
+                fg = ap[x, y] >= 128
+                level = 0 if n == 1 else min(n - 1, int(round(v / 255 * (n - 1))))
+                if fg and n > 1:
+                    level = max(1, level)
+            else:
+                fg = (v >= threshold) ^ bool(invert)
+                level = 0 if n == 1 else min(n - 1, int(round(v / 255 * (n - 1))))
             ch = charset[level] if fg else " "
             cells.append(GridCell(x=x, y=y, fg=fg, level=level, ch=ch))
 
