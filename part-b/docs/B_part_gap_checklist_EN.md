@@ -13,6 +13,10 @@
 > **Update 2026-11-04: P0-1 (`max_w` default 72), P0-2 (slogan branch), P0-3 (duck-typed
 > `export_meta`), P2 (sidecar `size`) and P1 (`.gitignore` `.DS_Store`) are fixed; tests went
 > 26 → 38 all green. See §6 “Before / after”.**
+>
+> **Second round 2026-11-04: alpha mask for transparent images (P1 #17), `max_h` height cap
+> (P1 #4), PNG/JPG/RGBA/P tests (P1 #16) and a non-destructive `demo_grid.py` (P1 #20) are done;
+> tests went 38 → 45 all green. See §7.**
 
 ---
 
@@ -50,7 +54,7 @@ have to do anything.
 | 1 | `build_grid(src, charset, max_w) → PixelGrid`; image/slogan → character grid; “size-controlled, clear foreground/background marks” | docx §6(3) Table 2, row B | met | `grid.py:120-151`; `tests/test_grid.py:47` (`test_returns_pixelgrid_with_consistent_shape`) | no |
 | 2 | `PixelGrid` “contains width, per-cell coordinates and foreground/background marks” | docx §6(2), paragraph 2 | met | `shared/types.py:25-32` (`GridCell`), `:43-54` (PixelGrid fields) | no |
 | 3 | “Each cell maps to one character position in the source; foreground cells are marked must-occupy, background cells may stay blank” | docx §2(2), step 1 | met | `grid.py:173-180` (fg/level/ch assignment); `GridCell.fg/ch`; `test_fg_bg_marks_clear` (tests:62) | no |
-| 4 | Skeleton-phase acceptance: “any PNG in → a **size-controlled** grid out, with foreground/background correctly separated” | docx §4(2), sentence 1 | partially met | Width is capped (`grid.py:165` `tw=min(g.width,max_w)`, `test_width_capped_by_max_w` tests:56); **height is unbounded**: a 50×2000 image at 72 → `50×1000` (measured); black-on-white art defaults to `density=0.797` (needs `invert`) | yes (P1: `max_h` + document it) |
+| 4 | Skeleton-phase acceptance: “any PNG in → a **size-controlled** grid out, with foreground/background correctly separated” | docx §4(2), sentence 1 | **fixed** (`max_h` added) | Width is capped (`tw=min(g.width,max_w)`, `test_width_capped_by_max_w`); height can now be bounded: 50×2000 at 72 used to give `50×1000`, with `max_h=200` it gives `10×200` (measured); `max_h=None` keeps the legacy behaviour; black-on-white art still defaults to `density=0.797` (pass `invert`) | no |
 | 5 | “Support custom charset and a resolution cap” | docx §5(1), row B | met | `charset` parameter + `validate_charset` (`grid.py:69-101`); `max_w` validated by `_validate_max_w` (`:103-117`) | no |
 | 6 | “Add a single-column charset whitelist; keep the 13 tests green” | PM:201 (§9 B①); PM:96 (§3 #5: one cell = one character, printable ASCII only, no Tab/CRLF/full-width) | met | `test_charset_accepts_printable_ascii`, `_rejects_tab`, `_rejects_cjk_and_emoji`, `_rejects_empty_and_non_str`, `_duplicates_are_deduped` (tests:139-186) | no |
 | 7 | “Confirm the `grid_rows`/`fg_rows` sidecar format and **`max_w` default 72**” | PM:201 | **fixed** (default 72) | Before: `max_w: int = 80`; after: `max_w: int = 72` (`grid.py:162`), `test_default_max_w_is_72` asserts cat → 72×36/1126 and `meta.max_w=72` | no |
@@ -62,11 +66,11 @@ have to do anything.
 | 13 | “Keep the demo cat unchanged before D8; supply the second and third shape-check patterns for D12” | PM:201 (§9 B③); PM:23 | met | `test_cat_fixture_numbers_are_stable` (tests:283, locks 72×36/1126); `samples/logo.png` + `slogan.txt` serve as samples 2 and 3 | no |
 | 14 | “Rows/columns 0-based, 1 cell = 1 character, printable ASCII only, no Tab/CRLF/full-width, no trailing rstrip” | PM:96; narrative:284 | partially met | Enforced for the charset (`grid.py:69-101`); **slogan input was unconstrained** (CJK — see #15); no rstrip (`types.py:55-59` concatenates glyphs) | yes (P1: define the slogan contract) |
 | 15 | Slogan text branch is stable (non-ASCII / over-long / empty) — not listed in the docs, but B claimed “long slogans wrap” (`README.md:44-45`) | `ascii-art-executable_B/README.md:43-45` | **fixed** | After: 79 chars at 72 → 70×20/fg=304 (at 48 → 48×43/fg=342); 300 chars and CJK/emoji/Tab all raise `ValueError`; before: empty text → `ValueError` (tests:129), `"中文"` at 72 → 52×14 with `d=0.077` rendered as two rows of `@@@@` blocks (no CJK glyph → `.notdef`), `"HELLO "*8` (48 chars) → **72×2, fg=0**, length ≥256 → **`OSError [Errno 63]`** (`grid.py:138`) | **yes (P0/P1)** |
-| 16 | Support PNG / JPG | docx §5(1) row B (“PNG/JPG…”), `README.md:39` | met (functionally) | Measured L/RGB/RGBA/P/1 modes and PNG/JPG all give `24×6 / fg=38`; `I;16` also works (fg=48; 16-bit saturates differently for the threshold); **tests only build L PNGs** — no JPG/RGBA case | yes (P1: add tests) |
-| 17 | Transparent background semantics | not defined in the docs | missing (undefined) | RGBA transparent + white art → fg=102 (alpha ignored, equivalent to a black background); transparent + **black** art → `fg=0` (art disappears) | yes (P1: define + test) |
+| 16 | Support PNG / JPG | docx §5(1) row B (“PNG/JPG…”), `README.md:39` | met (functionally + tests) | Measured L/RGB/RGBA/P/1 modes and PNG/JPG all give `24×6 / fg=38`; `I;16` also works (fg=48; 16-bit saturates differently); **tests added**: `test_jpeg_input`, `test_rgba_opaque_input`, `test_palette_png_input` | no |
+| 17 | Transparent background semantics | not defined in the docs | **fixed** (alpha = shape mask) | Before: transparent canvas + black art → `fg=0` (pattern vanished). After: when any pixel has `alpha<128`, alpha is the mask — transparent = background (RGB and `invert` ignored), opaque = foreground with level clamped to ≥1; transparent + black square → `10×5 / fg=18`, white square also 18; fully opaque RGBA still uses luminance (fg=38) | no |
 | 18 | Resolution-cap semantics: width only, or both width and height? | docx Table 2 row B (“size-controlled”); PM:96 | partially met | Code caps width only: `grid.py:165` `tw=min(g.width,max_w)`; height is derived as `th=round(tw*h/w/cell_aspect)` (`:166`) with no cap. The docs only say “size-controlled / width never exceeds the cap” (`README.md:40`), nothing about height | yes (P1: document + optional `max_h`) |
 | 19 | `demo/` holds the pattern; demo script | docx §7; PM:145 (directory conventions) | met | `demo/cat.png` (560×560 L, 4192 B); generator `scripts/demo_grid.py` | no |
-| 20 | `scripts/demo_grid.py` overwrites `demo/cat.png` | known hazard (checked this round) | partially met (harmless today) | `scripts/demo_grid.py:84` `make_cat(out / "cat.png")` → `im.save(path)` (`:76`); the regenerated file's sha256 `39e91a4f…` is **identical** to the committed `demo/cat.png`, so nothing changes today — but any drawing change would silently move the golden | yes (P1: `--out` / skip when present) |
+| 20 | `scripts/demo_grid.py` overwrites `demo/cat.png` | known hazard (checked this round) | **fixed** (`--out` / skip by default) | `scripts/demo_grid.py` now uses argparse: `--out PATH` selects the target, an existing file prints `skip:` and is reused, `--force` overwrites; `demo/cat.png` is no longer rewritten inadvertently | no |
 | 21 | README should cover interface, sample table, dependency versions, how to run | docx §5(1) A (README owned by A) + B's own contract | **fixed** (README rewritten) | After: README documents the new API, 9 sidecar keys, the sample table and the interpreter pitfall, and drops `CanvasPlan`; before: `README.md:36-47` had interface/parameters/run steps but was **missing** `export_meta/load_meta/validate_charset/fg_rows` (`grid.py:321-426`), the sample table and the Pillow version, still claimed `CanvasPlan` was part of the freeze (`README.md:51`, removed by PM:14), and its venv instructions conflicted with PM:143 | yes (P1: update README) |
 | 22 | v2 “one-click PNG → character art experience” | docx §5(1), last sentence of row B | missing | Only `scripts/demo_grid.py` (hard-coded cat); no entry point / CLI accepting an arbitrary PNG | yes (P2) |
 | 23 | CLI subcommands `build/verify/detect` | docx §2(1); PM:203-205 (owner E) | not B's responsibility | B has no `cli.py`, as per the split; `samples/make_samples.py` is an offline script | no |
@@ -187,3 +191,17 @@ Without `.DS_Store`: **9 files / 44,742 B**, clean to publish.
 | sample numbers | cat 72×36/1126/0.4344 | **unchanged** (all six rows identical, reruns idempotent) | `samples/make_samples.py` output |
 
 Files touched by the fixes: `ascii_art_executable/grid.py`, `tests/test_grid.py`, `README.md`, `.gitignore`, `samples/*.meta.json`, `samples/README.md`.
+
+---
+
+## 7. Second round of fixes (2026-11-04)
+
+| item | before | after | evidence |
+|---|---|---|---|
+| transparency | RGBA transparent canvas + black art → `fg=0` (pattern vanished) | alpha as shape mask: `alpha<128` → background (RGB ignored); opaque → foreground with level clamped to ≥1; transparent + black square → `10×5`, `fg=18`; white square gives the same 18 | `test_transparent_black_art_uses_alpha` |
+| height cap | only `max_w`; 50×2000 at 72 → `50×1000` | new `max_h` (default `None`): the same image at 72 with `max_h=200` → `10×200`; `max_h=None` unchanged | `test_max_h_caps_tall_image`, `test_max_h_none_keeps_legacy_behaviour` |
+| format/mode tests | only L PNG fixtures | added JPG, opaque RGBA and palette-P cases | `test_jpeg_input`, `test_rgba_opaque_input`, `test_palette_png_input` |
+| demo overwrite | every run rewrote `demo/cat.png` | `--out` selects the path, existing files are skipped, `--force` overwrites | `scripts/demo_grid.py` |
+| tests | 38 | **45 all green** (7 added) | `pytest -q` → `45 passed in 1.28s` |
+
+Files touched: `ascii_art_executable/grid.py` (`max_h`, `_open_image`, alpha mask), `tests/test_grid.py` (+7), `scripts/demo_grid.py` (argparse), `README.md`, `README.zh-CN.md`, `docs/B_part_gap_checklist_EN.md`.

@@ -1,7 +1,10 @@
 """B's demo: draw a cat head, save as PNG, build the character grid, print it.
 
 Run from the project root:
-    python3 scripts/demo_grid.py [max_w]
+    python3 scripts/demo_grid.py [max_w] [--out PATH] [--force]
+
+``demo/cat.png`` is a committed golden fixture, so an existing file is skipped
+unless ``--force`` is given.
 """
 
 from __future__ import annotations
@@ -77,16 +80,33 @@ def make_cat(path: Path, size: int = 560) -> Path:
     return path
 
 
-def main() -> None:
-    max_w = int(sys.argv[1]) if len(sys.argv) > 1 else 72
-    out = ROOT / "demo"
-    out.mkdir(exist_ok=True)
-    png = make_cat(out / "cat.png")
+def main() -> int:
+    import argparse
 
-    grid = build_grid(png, max_w=max_w)
+    parser = argparse.ArgumentParser(
+        description="Draw the demo cat PNG and print its character grid.")
+    parser.add_argument("max_w", nargs="?", type=int, default=72,
+                        help="grid width cap (default 72)")
+    parser.add_argument("--out", default=str(ROOT / "demo" / "cat.png"),
+                        help="PNG path (default: demo/cat.png)")
+    parser.add_argument("--force", action="store_true",
+                        help="overwrite an existing PNG (default: skip)")
+    args = parser.parse_args()
+
+    png = Path(args.out)
+    png.parent.mkdir(parents=True, exist_ok=True)
+    if png.exists() and not args.force:
+        # demo/cat.png is a committed golden fixture (72×36, fg=1126);
+        # rewriting it on every demo run would silently move the baseline.
+        print(f"skip: {png} already exists (use --force to overwrite)")
+    else:
+        make_cat(png)
+
+    grid = build_grid(png, max_w=args.max_w)
     print(f"# {png.name}  {grid.width}x{grid.height}  fg={grid.fg_count} ({grid.density:.1%})\n")
     print(grid.render())
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

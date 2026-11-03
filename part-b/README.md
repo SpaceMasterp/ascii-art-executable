@@ -20,6 +20,11 @@ Everything in this repository lives under `part-b/`; the root `LICENSE` and
   why the mask is exported separately.
 - **Charset validation**: one glyph = one printable single-column ASCII character
   (`0x20`–`0x7E`); Tab / full-width / CJK / emoji raise `ValueError`.
+- **Alpha**: an image whose alpha channel really has transparency (any pixel with
+  `alpha < 128`) uses alpha as the shape mask — transparent pixels are background
+  regardless of their RGB value, so a black logo on a transparent canvas no longer
+  disappears; opaque pixels are foreground and their ramp level is clamped to ≥ 1
+  so dark artwork still shows a glyph. Fully opaque RGBA keeps luminance behaviour.
 - **Slogans**: printable-ASCII text only, word-wrapped to `max_w`, at most
   `MAX_TEXT_CHARS = 200` characters. Empty / too long / non-ASCII input raises
   `ValueError` with the offending index (`slogan[3] = '中' (U+4E2D)` …).
@@ -29,7 +34,7 @@ Everything in this repository lives under `part-b/`; the root `LICENSE` and
 ## Interface
 
 ```python
-build_grid(src, charset=" .:-=+*#%@", max_w=72,
+build_grid(src, charset=" .:-=+*#%@", max_w=72, max_h=None,
            threshold=128.0, invert=False, cell_aspect=2.0) -> PixelGrid
 ```
 
@@ -38,6 +43,7 @@ build_grid(src, charset=" .:-=+*#%@", max_w=72,
 | `src` | image path (PNG/JPG/… any Pillow format) **or** slogan text; anything that is not an existing file path is treated as text |
 | `charset` | density ramp, sparse → dense, first char is treated as blank (default `" .:-=+*#%@"`) |
 | `max_w` | width cap, positive int, **default 72** |
+| `max_h` | optional height cap, positive int or `None` (**default `None`** = unbounded); with both caps set the image shrinks by the tighter ratio, so width ≤ `max_w` and height ≤ `max_h` |
 | `threshold` | grayscale 0–255 separating foreground from background (bright ≥ threshold = fg) |
 | `invert` | flip fg/bg (dark subject on a light background) |
 | `cell_aspect` | terminal cell height/width ratio, default 2.0 |
@@ -52,8 +58,12 @@ build_grid(src, charset=" .:-=+*#%@", max_w=72,
 cd part-b
 python3 -m venv .venv
 ./.venv/bin/python -m pip install -r requirements.txt
-./.venv/bin/python -m pytest tests -q          # 38 passed
-./.venv/bin/python tests/test_grid.py          # same 38 tests, no pytest needed
+./.venv/bin/python -m pytest tests -q          # 45 passed
+./.venv/bin/python tests/test_grid.py          # same 45 tests, no pytest needed
+
+# demo: prints the cat grid; never overwrites the committed cat.png unless --force
+./.venv/bin/python scripts/demo_grid.py 72
+./.venv/bin/python scripts/demo_grid.py 72 --out /tmp/cat_demo.png --force
 ```
 
 Any Python ≥ 3.10 that can `import PIL` works. (Known pitfall on macOS: a `.venv`
@@ -117,13 +127,15 @@ conventions (white art on black background, origin supplied by the layout stage)
 
 ## Tests
 
-38 tests, all passing (`pytest -q tests`):
+45 tests, all passing (`pytest -q tests`):
 
 ```
-38 passed in 0.21s
+45 passed in 0.48s
 ```
 
-They cover the image path (size cap, fg/bg marks, invert, aspect), charset
-validation (printable ASCII, Tab/CJK/emoji rejection, de-duplication), mask
-export (`fg=True` with blank glyph), the meta round-trip, duck-typed export, and
-the slogan contract (short, 79-char, 300-char, blank, CJK/emoji/Tab, long-word split).
+They cover the image path (width/height caps, fg/bg marks, invert, aspect),
+PNG/JPG/RGBA/palette inputs, the alpha-as-mask rule (transparent canvas + black
+square), charset validation (printable ASCII, Tab/CJK/emoji rejection,
+de-duplication), mask export (`fg=True` with blank glyph), the meta round-trip,
+duck-typed export, and the slogan contract (short, 79-char, 300-char, blank,
+CJK/emoji/Tab, long-word split).
