@@ -123,19 +123,24 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 
 ## CI
 
-日常主干检查使用 Ubuntu 24.04、Python 3.12、Clang 18 和 pip 提供的
-libclang 18.1.1。全量任务运行测试、前端脚本语法检查、测试数量守卫及正式验收，
-并上传以 commit 命名的源码和报告附件。
+当前 CI 采用 #27 已合并的配置：Ubuntu 使用 ubuntu-latest、Python 3.12、
+系统 Clang 和 pip 提供的 libclang 18.1.1。全量任务检查依赖导入、记录环境、
+检查前端脚本语法和测试数量，再运行完整测试套件。
+正式验收需另行运行上面的 `scripts.run_verification` 命令；当前 CI 不自动
+生成或上传正式验收报告。已有验收证据请按报告中的 commit 核对。
 
-| 事件 | Ubuntu 快速检查 | Ubuntu 全量与正式验收 | macOS 附加全量 |
+| 事件 | Ubuntu 快速检查 | Ubuntu 全量 | macOS 附加全量 |
 | --- | --- | --- | --- |
-| PR 创建、更新、重开 | 运行 | 运行 | 跳过 |
-| PR 加上 full-ci 标签 | 运行 | 运行 | 运行 |
+| PR 创建、更新、重开（无标签） | 运行 | 跳过 | 跳过 |
+| PR 仅有 full-ci 标签 | 运行 | 运行 | 跳过 |
+| PR 仅有 macos-ci 标签 | 运行 | 跳过 | 运行 |
+| PR 同时有上述两个标签 | 运行 | 运行 | 运行 |
 | 推送 main 或 v* 标签 | 运行 | 运行 | 跳过 |
 | Actions 手动运行 | 运行 | 运行 | 运行 |
 
-需要跨平台验证时，使用 `full-ci` 标签，或在 Actions 中手动运行
-Python tests。macOS 运行器容量不足可能延迟这次附加检查。
+需要 Ubuntu 全量验证时，添加 `full-ci` 标签；需要 Apple Clang 验证时，
+添加 `macos-ci` 标签。也可以在 Actions 中手动运行 Python tests，一次运行
+两个平台。macOS 运行器容量不足可能延迟附加检查。
 同一 PR 的新事件会取消旧运行。PR 应写明实际命令、测试结果和环境版本。
 
 ## Clang 与 libclang 排错
