@@ -105,9 +105,34 @@ that is E's job.
   last span line comment;
 - `allow_line_comments=False`;
 - string literal with an internal space (`"a b"` is one 5-cell token);
-- a real `int div(int a, int b){return a/b;}` function: the rendered source is
-  re-lexed with Clang and compared token by token, then compiled with
-  `clang -std=c11 -pedantic-errors -c`.
+- a real A → C → D regression for `div` and `gcd` on all three shapes:
+  `source.analyze_source` → `layout.fit_layout` → `render_source`, then the
+  rendered source is re-lexed through the shared profile, checked with
+  `check_geometry`, inspected for hole ink / division adjacency / line tails,
+  and compiled with `clang -std=c11 -pedantic-errors -c`.
+
+## Real-layout evidence
+
+`scripts/generate_d_reports.py` regenerates the 18 ordinary-input cases
+(6 functions × 3 shapes) under `docs/reports/`:
+
+- `case_<function>_<shape>.c` plus a matching `.log`;
+- `D_manifest.csv` with statuses, coverage, comment counts, attempts, scale,
+  duration and the independent compile result;
+- `D_checklist.md`, the human-readable table.
+
+Measured on `main` (macOS arm64, Python 3.11, Apple clang 21):
+
+| metric | result |
+|---|---|
+| token / geometry / compile | 18/18 PASS |
+| behavior | 18/18 `NOT_RUN (NO_FIXTURE)` as expected for ordinary input |
+| coverage | 0.9886 – 0.9990 |
+| hole ink | 0 in every cat/code case |
+| block comments | minimum length 5 (grammar minimum 4) |
+| line comments | every `//` reaches the end of its row |
+| layout attempts / scale | 1 / 1 (these inputs fit at the base height) |
+| independent `clang -c` | rc 0 in 18/18 cases |
 
 ## Known limits
 
@@ -115,3 +140,7 @@ that is E's job.
 - Line comments are single-line by construction; no backslash continuation.
 - Coverage is a layout consequence: if C leaves small spans, D cannot raise it
   without breaking the boundary rules.
+- Ordinary input has no behavior fixture, so `behavior_status` is `NOT_RUN`
+  with reason `NO_FIXTURE`; the 144 comparisons belong to E's builtin matrix.
+- D reads the real `LayoutPlan` from C; it does not choose sizes, scales or
+  retry counts. Automatic scaling is exercised by C/E, not by these cases.

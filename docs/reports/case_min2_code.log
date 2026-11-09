@@ -1,0 +1,11 @@
+case: min2_code
+token: PASS
+geometry: PASS
+compile: PASS
+behavior: NOT_RUN (NO_FIXTURE)
+coverage: 0.9988
+comment_cells: {'block': 2128, 'line': 1987}
+attempts: 1
+scale: 1
+clang -c rc: 0
+stderr: 

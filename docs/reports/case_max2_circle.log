@@ -1,0 +1,11 @@
+case: max2_circle
+token: PASS
+geometry: PASS
+compile: PASS
+behavior: NOT_RUN (NO_FIXTURE)
+coverage: 0.9963
+comment_cells: {'block': 0, 'line': 1572}
+attempts: 1
+scale: 1
+clang -c rc: 0
+stderr: 

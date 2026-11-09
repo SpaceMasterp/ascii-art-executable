@@ -12,11 +12,12 @@ from time import monotonic
 import pytest
 
 from codeart import FontMetrics, Mask, ShapeSpec, SizeRequest, build_mask
+from codeart import source
 from codeart._verification_geometry import check_geometry
 from codeart.contracts import (
     FillOptions,
+    LayoutOptions,
     LayoutPlan,
-    LexedToken,
     Placement,
     RunContext,
     SourceModel,
@@ -24,10 +25,18 @@ from codeart.contracts import (
     VerificationProfile,
 )
 from codeart.fill import render_source
+from codeart.layout import fit_layout
 
 CLANG = shutil.which("clang")
-requires_clang = pytest.mark.skipif(CLANG is None, reason="Clang is required")
-_RAW_TOKEN = re.compile(r"(\w+) '(.*?)'\t[^\n]*\tLoc=<<stdin>:(\d+):(\d+)>\n", re.DOTALL)
+try:
+    import clang.cindex  # noqa: F401
+    HAS_LIBCLANG = True
+except Exception:
+    HAS_LIBCLANG = False
+requires_clang = pytest.mark.skipif(
+    CLANG is None or not HAS_LIBCLANG,
+    reason="Clang and libclang are required",
+)
 
 
 def context(seconds=30):
@@ -239,64 +248,73 @@ def test_string_internal_space_is_not_a_gap():
     assert not issues.reasons, issues.reasons
 
 
-# ------------------------------------------------------- real Clang re-lexing
+# ------------------------------------------------------- real A -> C -> D chain
 
 
-def clang_tokens(source, *, ctx):
-    ctx.check()
-    result = subprocess.run(
-        [CLANG, "-std=c11", "-x", "c", "-fsyntax-only", "-Xclang", "-dump-raw-tokens", "-"],
-        input=source, text=True, capture_output=True, check=True,
-        timeout=max(0, ctx.deadline - monotonic()),
+def real_layout_case(text, shape, seconds=60):
+    """Run the real A -> C -> D chain and return its artifacts."""
+    ctx = context(seconds)
+    model = source.analyze_source(text, VerificationProfile(), ctx=ctx)
+    plan = fit_layout(
+        model,
+        ShapeSpec(shape),
+        LayoutOptions(),
+        mask_builder=build_mask,
+        join_checker=source.can_join,
+        ctx=ctx,
     )
-    tokens = []
-    offset = 0
-    for match in _RAW_TOKEN.finditer(result.stderr):
-        assert match.start() == offset, result.stderr
-        offset = match.end()
-        kind, spelling, line, column = match.groups()
-        if kind == "unknown" and spelling.isspace():
-            continue
-        tokens.append(LexedToken(kind, spelling, int(line), int(column), kind == "comment"))
-    assert offset == len(result.stderr), result.stderr
-    return tokens
-
-
-def fake_placements(tokens, start_row=16, start_col=2):
-    placements = []
-    col = start_col
-    for token in tokens:
-        placements.append(Placement(token.index, start_row, col))
-        col += token.width
-        col += 6 if token.spelling == "/" else 1
-    return placements
-
-
-@requires_clang
-def test_real_function_relexes_and_compiles(tmp_path):
-    source = "int div(int a, int b){return a/b;}"
-    ctx = context()
-    lexed = [token for token in clang_tokens(source, ctx=ctx) if not token.is_comment]
-    tokens = tuple(
-        Token(index, token.kind, token.spelling, len(token.spelling), token.line, token.column)
-        for index, token in enumerate(lexed)
-    )
-    mask = build_mask(ShapeSpec("circle"), SizeRequest(32), FontMetrics())
-    plan = plan_for(mask, fake_placements(tokens))
-    model = model_for(tokens, "div", "int div(int a, int b)")
-
     rendered = render_source(model, plan, FillOptions(), ctx=ctx)
+    return model, plan, rendered, ctx
 
-    actual = [token for token in clang_tokens(rendered.source_text, ctx=ctx)
+
+REAL_SOURCES = {
+    "div": "int div(int a,int b){return a/b;}",
+    "gcd": "int gcd(int a,int b){if(b==0)return a;return gcd(b,a%b);}",
+}
+
+
+@pytest.mark.parametrize("shape", ("circle", "cat", "code"))
+@pytest.mark.parametrize("name", tuple(REAL_SOURCES))
+@requires_clang
+def test_real_layout_relexes_geometry_and_compiles(name, shape, tmp_path):
+    """D's real-layout regression: A's tokens, C's layout, D's output."""
+    text = REAL_SOURCES[name]
+    model, plan, rendered, ctx = real_layout_case(text, shape)
+    lines = split_lines(rendered)
+
+    actual = [token for token in model.profile.lex_source(rendered.source_text, ctx=ctx)
               if not token.is_comment]
     assert [(token.kind, token.spelling) for token in actual] == [
-        (token.kind, token.spelling) for token in tokens
+        (token.kind, token.spelling) for token in model.tokens
     ]
 
     metrics, issues = check_geometry(model, plan, rendered, actual, ctx)
     assert not issues.reasons, issues.reasons
+    assert rendered.coverage > 0.9
 
-    program = tmp_path / "rendered.c"
+    # Holes stay blank.
+    for feature in ("eye_left", "eye_right", "nose", "code_strokes"):
+        for row, col in plan.mask.features.get(feature, ()):
+            assert lines[row][col] == " ", (feature, row, col, lines[row])
+
+    # A real division sign keeps a blank before any adjacent comment.
+    for token, placement in zip(model.tokens, plan.placements):
+        if token.spelling == "/":
+            row, col = placement.row, placement.col
+            suffix = lines[row][col + 1:]
+            assert not suffix.startswith(("//", "/*")), (name, shape, lines[row])
+
+    # Every line comment closes the line; no token or allowed cell follows it.
+    for line in lines:
+        if "//" in line:
+            assert re.search(r"//=*$", line), line
+
+    # Block comments respect the four-cell minimum.
+    for line in lines:
+        for match in re.finditer(r"/\*=*\*/", line):
+            assert len(match.group()) >= 4, line
+
+    program = tmp_path / f"{name}_{shape}.c"
     program.write_text(rendered.source_text, encoding="utf-8")
     build = subprocess.run(
         [CLANG, "-std=c11", "-pedantic-errors", "-x", "c", "-c", str(program),
@@ -305,3 +323,4 @@ def test_real_function_relexes_and_compiles(tmp_path):
         timeout=max(0, ctx.deadline - monotonic()),
     )
     assert build.returncode == 0, build.stderr
+
