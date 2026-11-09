@@ -11,10 +11,11 @@ from time import monotonic
 from codeart.contracts import GenerationRequest, LayoutOptions, VerificationReport
 from codeart.pipeline import generate
 from codeart.procutil import WorkStopped
-from codeart.verification_regression import run_regression
+from codeart.verification_regression import load_cat_references, run_regression
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SHAPE_FIXTURES = ROOT / "tests" / "fixtures" / "shapes"
 HEIGHT = 32
 CHECKS = ("token", "geometry", "compile", "behavior")
 
@@ -26,7 +27,7 @@ def _git_state():
     return git("rev-parse", "HEAD"), bool(git("status", "--porcelain"))
 
 
-def _run_matrix(output_dir):
+def _run_matrix(output_dir, cat_references):
     options = LayoutOptions(base_height_rows=HEIGHT, max_attempts=1)
     results = []
 
@@ -42,7 +43,7 @@ def _run_matrix(output_dir):
         results.append((result, monotonic() - start))
         return result.verification
 
-    matrix = run_regression(generate_case)
+    matrix = run_regression(generate_case, cat_references=cat_references)
     cases = []
     for case, (result, elapsed_s) in zip(matrix.cases, results, strict=True):
         mask = result.plan.mask if result.plan is not None else None
@@ -73,8 +74,10 @@ def _run_matrix(output_dir):
             "generation_diagnostics": [asdict(item) for item in result.diagnostics],
         })
 
+    fixed_matrix_passed = matrix.matrix_passed and all(not case["issues"] for case in cases)
     return {
-        "fixed_matrix_passed": matrix.matrix_passed and all(not case["issues"] for case in cases),
+        "fixed_matrix_passed": fixed_matrix_passed,
+        "passed": fixed_matrix_passed and matrix.passed,
         "behavior_comparisons": matrix.comparisons,
         "build_counts": matrix.build_counts,
         "elapsed_s": matrix.elapsed_s,
@@ -90,8 +93,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         commit, dirty = _git_state()
+        cat_references = load_cat_references(SHAPE_FIXTURES)
         args.output_dir.mkdir(parents=True, exist_ok=False)
-    except (OSError, CalledProcessError) as exc:
+    except (OSError, CalledProcessError, ValueError) as exc:
         parser.error(str(exc))
 
     summary = {
@@ -100,12 +104,15 @@ def main(argv=None):
         "checkout_dirty": dirty,
         "python": platform.python_version(),
         "height_rows": HEIGHT,
-        **_run_matrix(args.output_dir),
+        **_run_matrix(args.output_dir, cat_references),
     }
     report_path = args.output_dir / "report.json"
     report_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     status = "PASS" if summary["fixed_matrix_passed"] else "FAIL"
     print(f"{status} fixed matrix ({summary['behavior_comparisons']}/144 comparisons) | {report_path}")
+    scales = ", ".join(f"{scale}x {result['status'].value}"
+                       for scale, result in summary["cat_scales"].items())
+    print(f"Scaled cat: {scales}")
     return int(not summary["fixed_matrix_passed"])
 
 

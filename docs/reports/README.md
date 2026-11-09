@@ -11,10 +11,10 @@ Do not overwrite an earlier run when the source or revision differs.
 
 ## Handoffs
 
-- B supplies independent geometry reference JSON and assertion definitions.
-  E currently checks scales 1, 2 and 4, corresponding to heights 32, 64 and
-  128. A proposed h96 fixture is scale 3 and must be explicitly coordinated
-  with E's scale set before replacing an h128 reference.
+- B supplies geometry reference JSON and assertion definitions. E's acceptance
+  command loads the h32, h64 and h128 fixtures for scales 1, 2 and 4. B keeps
+  h96 as a scale-3 regression fixture. See the
+  [verification guide](../modules/verify.md#固定尺寸验收) for the report fields.
 - C owns the narrow-span hollow CODE and longest-token growth regressions.
 - D reports token, block-comment and line-comment contributions separately.
 - E distinguishes fixed h32 behavior evidence from grown cases, and records

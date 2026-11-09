@@ -3,7 +3,29 @@ import json
 import pytest
 
 from codeart.contracts import AttemptRecord, Diagnostic, ErrorCode, GenerationResult
+from codeart.verification_regression import load_cat_references, run_regression
 from scripts import run_verification
+
+
+def test_cat_references_use_h32_area_and_per_scale_geometry(tmp_path):
+    # h96 must not substitute for a missing acceptance height.
+    for height in (32, 96, 128):
+        name = f"metrics_h{height}.json"
+        (tmp_path / name).write_bytes((run_verification.SHAPE_FIXTURES / name).read_bytes())
+
+    references = load_cat_references(tmp_path)
+    assert set(references) == {1, 4}
+    scale_four = references[4]
+    eye = scale_four.holes["eye_left"]
+    assert eye.base_area == references[1].holes["eye_left"].base_area == 43
+    assert eye.center == pytest.approx((62.191, 85.216))
+    assert eye.boundary_cells == pytest.approx(104.919016)
+    assert scale_four.ear_gap_rows == 20
+
+    report = run_regression(lambda selection, shape, *, ctx: None, cat_references=references)
+    assert report.cat_scales[2].status == "NOT_RUN"
+    assert report.cat_scales[2].issues == ("MISSING_REFERENCE",)
+    assert report.cat_scales[4].status == "PASS"
 
 
 def test_fixed_matrix_archives_pipeline_failures_without_overwriting(tmp_path, monkeypatch):
@@ -28,6 +50,10 @@ def test_fixed_matrix_archives_pipeline_failures_without_overwriting(tmp_path, m
     saved = report_path.read_bytes()
     report = json.loads(saved)
     assert not report["fixed_matrix_passed"]
+    assert not report["passed"]
+    assert report["cat_scales"] == {
+        scale: {"status": "PASS", "issues": []} for scale in ("1", "2", "4")
+    }
     assert report["commit"] == "example-sha"
     assert report["behavior_comparisons"] == 0
     assert len(report["cases"]) == 18

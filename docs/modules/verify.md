@@ -30,7 +30,9 @@ python -m scripts.run_verification --output-dir docs/reports/2026-11-09-pr-revie
 
 退出码 0 表示固定尺寸矩阵通过。个案失败时，报告保留已生成的源码和失败诊断。若流水线在验证前停止，四项状态都为 `NOT_RUN`，具体原因见 `generation_diagnostics`。行为项的 `NO_FIXTURE` 和 `OUTPUT_TOO_LARGE` 都是跳过原因，计入 144 次的是实际完成的比较。
 
-猫头放大验收单列。B 的 PR #14 提供 32、64、96 行回归基准，面积容差使用周长近似。v1.4 的独立验收仍约定 32、64、128 行，以及与真实孔洞轮廓相交的格数作为面积容差。待 B、E 对齐尺度、参考来源和容差后，再接入正式验收。固定尺寸命令报告放大项为 `NOT_RUN (MISSING_REFERENCE)`，其退出码只反映固定尺寸矩阵。
+同一命令读取 B 提供的 `metrics_h{32,64,128}.json`，把猫头放大验收按 1×、2×、4× 单列在 `cat_scales` 中。h96 保留作 B 的 3× 回归。JSON 中 `passed` 要求固定矩阵和三档猫头检查全部通过，命令退出码仍对应 `fixed_matrix_passed`。缺少对应夹具时，该档报告 `NOT_RUN (MISSING_REFERENCE)`。三档都需要 h32 提供基础面积和容差。
+
+眼鼻的预期面积统一用 h32 格数乘以倍率平方，容差取 B 约定的相对项、周长近似项和最小格数中的最大值。质心和耳间距采用各档的参考值。B 以格中心为坐标，E 以零基格下标为坐标，适配器将质心的行、列各减 0.5。
 
 ## 独立测试与回归接口
 
@@ -44,7 +46,7 @@ python3 -m pytest -q tests/test_shapes.py tests/test_verify.py
 
 `codeart.verification_regression.run_regression(generate_case)` 传给适配器 `(selection, shape_spec, *, ctx)`。适配器负责调用真实流水线，原样转交选择对象和共享截止时间及取消信号，并返回 `VerificationReport`。流水线未产出报告时可返回 `None`。回归总预算为 180 秒，每例最多 30 秒，适配器需支持把剩余预算传入流水线。串行回归会话缓存原函数的可执行构建和对象编译结果，结束时清理所有临时产物。
 
-`matrix_passed` 要求 18 例的四项状态都通过，实际对照 144 次，且原函数和生成函数的可执行构建次数分别为 6 和 18。默认总覆盖率至少 0.85，每只猫耳至少 0.70。猫头放大参考通过 `cat_references` 传入，键为 1、2、4 倍，参考含眼鼻基础面积、各尺度中心和边界格容差，以及耳峰凹陷深度。缺少参考的尺度记 `NOT_RUN`，只有矩阵和三个尺度都通过时 `passed` 才为真。
+`matrix_passed` 要求 18 例的四项状态都通过，实际对照 144 次，且原函数和生成函数的可执行构建次数分别为 6 和 18。默认总覆盖率至少 0.85，每只猫耳至少 0.70。调用者可以用 `load_cat_references(directory)` 读取 B 的夹具，再通过 `cat_references` 传入。键为 1、2、4 倍，参考含眼鼻基础面积、各尺度中心和面积容差，以及耳峰凹陷深度。缺少参考的尺度记 `NOT_RUN`，只有矩阵和三个尺度都通过时 `passed` 才为真。
 
 ## 跨模块修改说明
 
