@@ -24,9 +24,11 @@ python -m pytest -q
 
 Production use only needs `requirements.txt`. Development dependencies add
 pytest. Record the output of `python -m codeart.environment` with any bug
-report. The CI baseline is macos-15, Python 3.12, the runner's Apple Clang, libclang
-18.1.1 and pytest 9.2.0. Local validation also uses macOS, Python 3.14 and
-Apple Clang. The exact local versions are available in the environment report.
+report. CI runs the pure-Python tests in a fast `unit` job on ubuntu-latest and
+everything else in a `full` job whose baseline is macos-15, Python 3.12, the
+runner's Apple Clang, libclang 18.1.1 and pytest 9.2.0. Local validation also
+uses macOS, Python 3.14 and Apple Clang. The exact local versions are available
+in the environment report.
 
 ## Local web interface
 
@@ -126,7 +128,8 @@ Keep fixed and grown runs in separate `fixed/` and `scaled/` subdirectories.
 Each completion table identifies the tested commit and any uncommitted changes.
 Web and CLI reports include that revision information.
 
-A minimal GitHub Actions workflow runs the complete suite on macOS for
-pushes to main and pull requests, logs compiler versions and rejects a
-decrease in collected test count relative to the base revision. PRs should include the actual test result and relevant environment
+A minimal GitHub Actions workflow runs for pushes to main and pull requests in
+two jobs: `unit` on ubuntu-latest runs the pure-Python test files (no libclang),
+and `full` on macOS runs the complete suite, logs compiler versions and rejects
+a decrease in collected test count relative to the base revision. PRs should include the actual test result and relevant environment
 information. See [the F completion checklist](docs/reports/F_acceptance.md).
