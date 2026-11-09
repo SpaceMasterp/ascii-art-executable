@@ -15,7 +15,6 @@ plan = fit_layout(
     model,       # SourceModel: tokens in order, plus the verification profile
     shape_spec,  # ShapeSpec: which pattern the mask is built for
     options,     # LayoutOptions: base height, growth, attempt/canvas/time limits
-    *,
     mask_builder=build_mask,  # injected B builder returning a Mask
     join_checker=can_join,    # injected A checker for lexical separators
     ctx=ctx,                  # RunContext: cancellation and deadline

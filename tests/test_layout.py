@@ -398,10 +398,10 @@ def test_actual_scale_reflects_rounded_height():
 
 
 def test_code_mask_packs_tokens_across_many_short_spans():
-    # The 178x32 CODE mask splits its rows into short 7-22 cell spans. The
-    # engine must flow tokens across these fragmented spans instead of raising
-    # a false LAYOUT_LIMIT.
-    token_count = 300
+    # The first four rows are single full-width spans (178 cells); from row 4
+    # the mask is fragmented into short 5-8 cell spans. Use enough tokens to
+    # reach that fragmented region and assert tokens flow across the short spans.
+    token_count = 1200
     tokens = tuple(Token(i, "identifier", "v", 1, 1, 1) for i in range(token_count))
     model = model_for(tokens)
 
@@ -410,13 +410,33 @@ def test_code_mask_packs_tokens_across_many_short_spans():
 
     assert plan.mask.width == 178
     assert len(plan.placements) == token_count
-    # Placements genuinely span multiple rows (the fragmented CODE spans).
-    assert len({p.row for p in plan.placements}) > 1
+    mask = plan.mask
+
+    # At least one occupied row is a fragmented multi-span row.
+    occupied_rows = {p.row for p in plan.placements}
+    fragmented_rows = [r for r in occupied_rows if len(mask.spans[r]) > 1]
+    assert fragmented_rows, "no token reached the fragmented spans"
+
+    def span_index_of(row, col):
+        for idx, (start, end) in enumerate(mask.spans[row]):
+            if start <= col < end:
+                return idx
+        raise AssertionError("col outside the row's spans")
+
+    # On a fragmented row, tokens flow across at least two distinct spans.
+    cross_span = False
+    for row in fragmented_rows:
+        cols = [p.col for p in plan.placements if p.row == row]
+        if len({span_index_of(row, col) for col in cols}) >= 2:
+            cross_span = True
+            break
+    assert cross_span, "tokens never crossed between the short spans"
+
     # Every token sits on an allowed cell inside one of the row's spans.
     for placement in plan.placements:
         row, col = placement.row, placement.col
-        assert plan.mask.allowed[row][col]
-        assert any(start <= col < end for start, end in plan.mask.spans[row])
+        assert mask.allowed[row][col]
+        assert any(start <= col < end for start, end in mask.spans[row])
 
 
 def test_token_wider_than_base_spans_succeeds_after_growth():
@@ -448,9 +468,10 @@ def test_token_wider_than_base_spans_succeeds_after_growth():
 
 
 def test_long_token_that_never_fits_raises_layout_limit_with_history():
-    # A token wider than the canvas can ever provide must fail with LAYOUT_LIMIT,
-    # and the diagnostic details expose the full attempt history.
-    wide = Token(0, "identifier", "w" * 700, 700, 1, 1)
+    # A token wider than the maximum canvas width (801 > max_columns 800) can
+    # never fit any valid mask, so it must fail with LAYOUT_LIMIT and the
+    # diagnostic details expose the full attempt history.
+    wide = Token(0, "identifier", "w" * 801, 801, 1, 1)
     model = model_for((wide,))
     options = LayoutOptions(base_height_rows=4, max_attempts=12,
                             max_columns=800, max_rows=600)
