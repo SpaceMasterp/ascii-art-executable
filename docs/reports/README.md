@@ -13,7 +13,11 @@ Do not overwrite an earlier run when the source or revision differs.
 
 - B supplies geometry reference JSON and assertion definitions. E's acceptance
   command loads the h32, h64 and h128 fixtures for scales 1, 2 and 4. B keeps
-  h96 as a scale-3 regression fixture. See the
+  h96 as a scale-3 regression fixture. The B checklist, the measured numbers
+  and the B→E handoff (current-height centroid with the `−0.5` cell-index
+  correction, `base_area` from h32) are in
+  [B_shapes.md](B_shapes.md), with evidence under
+  [`b_shapes/`](b_shapes/). See the
   [verification guide](../modules/verify.md#固定尺寸验收) for the report fields.
 - C owns the narrow-span hollow CODE and longest-token growth regressions.
 - D reports token, block-comment and line-comment contributions separately.

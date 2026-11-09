@@ -1,0 +1,66 @@
+# Part B — test run and generator idempotency evidence
+# Repo: /private/tmp/bchk
+# Command: docs/reports/b_shapes/run_b_evidence.sh
+# Code commit under test (origin/main): 4b8b5b8b29e761e5e808b5dfc69acb4b4d004f94
+# Branch: part-b-checklist
+# Uncommitted changes outside docs/reports/: no
+# git status --porcelain at run time (only this PR's docs are expected):
+ M docs/reports/b_shapes/B_checks.py
+ M docs/reports/b_shapes/B_checks.txt
+ M docs/reports/b_shapes/B_tests.txt
+ M docs/reports/b_shapes/run_b_evidence.sh
+
+$ /tmp/bchkvenv/bin/python -m pytest tests/test_shapes.py tests/test_shape_metrics.py -q
+................................................                         [100%]
+48 passed in 1.06s
+[exit 0]
+
+# --- generator idempotency: sha256 of the four fixtures ---
+# baseline (before the first run)
+
+$ sha256sum tests/fixtures/shapes/metrics_h32.json tests/fixtures/shapes/metrics_h64.json tests/fixtures/shapes/metrics_h96.json tests/fixtures/shapes/metrics_h128.json
+7f301e8d0753c843fdc43a2ba42cb2bdc6698af4f5df6b3f730af02f2ecacb80  tests/fixtures/shapes/metrics_h32.json
+eb1fb2434ccad929bfdc0dd304d889290c69834c7690fe3b96c19d1c22f4cc2d  tests/fixtures/shapes/metrics_h64.json
+679b1fe07a159c8cacebb7fc2f62bf6ab2bee703c24c113182ec0d24dcb4c081  tests/fixtures/shapes/metrics_h96.json
+b31df543643a2be67008fa88fd0f5cb4f3ee1017141c3d25c9fffb4f4577b946  tests/fixtures/shapes/metrics_h128.json
+[exit 0]
+
+# first run
+
+$ /tmp/bchkvenv/bin/python scripts/gen_shape_metrics.py
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h32.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h64.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h96.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h128.json
+[exit 0]
+
+$ sha256sum tests/fixtures/shapes/metrics_h32.json tests/fixtures/shapes/metrics_h64.json tests/fixtures/shapes/metrics_h96.json tests/fixtures/shapes/metrics_h128.json
+7f301e8d0753c843fdc43a2ba42cb2bdc6698af4f5df6b3f730af02f2ecacb80  tests/fixtures/shapes/metrics_h32.json
+eb1fb2434ccad929bfdc0dd304d889290c69834c7690fe3b96c19d1c22f4cc2d  tests/fixtures/shapes/metrics_h64.json
+679b1fe07a159c8cacebb7fc2f62bf6ab2bee703c24c113182ec0d24dcb4c081  tests/fixtures/shapes/metrics_h96.json
+b31df543643a2be67008fa88fd0f5cb4f3ee1017141c3d25c9fffb4f4577b946  tests/fixtures/shapes/metrics_h128.json
+[exit 0]
+
+# second run
+
+$ /tmp/bchkvenv/bin/python scripts/gen_shape_metrics.py
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h32.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h64.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h96.json
+wrote /private/tmp/bchk/tests/fixtures/shapes/metrics_h128.json
+[exit 0]
+
+$ sha256sum tests/fixtures/shapes/metrics_h32.json tests/fixtures/shapes/metrics_h64.json tests/fixtures/shapes/metrics_h96.json tests/fixtures/shapes/metrics_h128.json
+7f301e8d0753c843fdc43a2ba42cb2bdc6698af4f5df6b3f730af02f2ecacb80  tests/fixtures/shapes/metrics_h32.json
+eb1fb2434ccad929bfdc0dd304d889290c69834c7690fe3b96c19d1c22f4cc2d  tests/fixtures/shapes/metrics_h64.json
+679b1fe07a159c8cacebb7fc2f62bf6ab2bee703c24c113182ec0d24dcb4c081  tests/fixtures/shapes/metrics_h96.json
+b31df543643a2be67008fa88fd0f5cb4f3ee1017141c3d25c9fffb4f4577b946  tests/fixtures/shapes/metrics_h128.json
+[exit 0]
+
+# fixtures untouched by the two runs (empty = byte identical)
+
+$ git status --porcelain tests/fixtures/shapes
+[exit 0]
+
+$ git diff --stat tests/fixtures/shapes
+[exit 0]
