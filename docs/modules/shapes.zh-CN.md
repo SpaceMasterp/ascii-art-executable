@@ -105,6 +105,84 @@ holes: [{cells, centroid: {row, col}}],   # 只统计内部孔洞
 code_stroke_cells
 ```
 
+## 供验收使用的放大参考数据
+
+`tests/fixtures/shapes/metrics_h{32,64,96}.json` 是给 E 用的生成快照：每个文件覆盖
+`circle`、`cat` 与 `code`（`text="CODE"`）三种图案在同一高度下的几何数据。重新生成：
+
+```bash
+python scripts/gen_shape_metrics.py
+```
+
+脚本对每个「图案 × 高度」调用 `build_mask` + `geometry_metrics`，没有手填数字；输出确定
+（两次运行字节一致），`tests/test_shape_metrics.py` 会校验 fixture 与当前实现一致。
+
+顶层字段：
+
+| 字段 | 含义 |
+|---|---|
+| `schema_version` | `1` |
+| `cell_aspect` | `0.5`，项目固定的字符宽 / 字符高 |
+| `height_rows` | 本文件所有图案共用的行数 |
+| `generated_by` | 生成脚本路径 `scripts/gen_shape_metrics.py` |
+| `tolerance` | E 使用的容差（见下） |
+| `shapes` | `circle`、`cat`、`code` → 各图案的记录 |
+| `scaling_expectation` | 文字说明 + 缩放公式的参考高度（`32`） |
+
+单个图案的记录：
+
+| 字段 | 含义 |
+|---|---|
+| `cols`、`rows` | mask 尺寸（列数由图案物理宽高比决定） |
+| `bbox_ratio` | 占据的外接矩形比：`bbox_cols * cell_aspect / bbox_rows` |
+| `allowed_cells` | 可填格数 |
+| `spans_total` | 所有行上极大可填区间的总数 |
+| `rows_with_multiple_spans` | 被至少一个孔洞切成多段的行数 |
+| `features` | 只含命名的眼/鼻洞；`circle` 与 `code` 为 `{}` |
+| `hole_count` | 命名孔洞特征数：`cat` 为 `3`，其余为 `0` |
+| `ear_gap_rows` | 仅 `cat`：两个耳尖之间的凹陷行数；其余为 `null` |
+
+每个 feature：
+
+| 字段 | 含义 |
+|---|---|
+| `cells` | 该特征的格数（即下文的 `A_ref`） |
+| `bbox` | 闭区间 `[min_row, min_col, max_row, max_col]` |
+| `centroid` | `[row, col]`，采用**格中心**坐标（下标 + 0.5） |
+
+### 容差口径
+
+对 32 行下测得面积为 `A_ref` 的 feature：
+
+```
+A_expected(h) = A_ref * (h / 32) ** 2
+area_ok      = abs(cells(h) - A_expected(h)) <= max(area_abs_cells, area_rel * A_expected(h))
+centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_abs_cells
+```
+
+栅格化孔洞的格数与理想连续面积之间会差一圈边界格——即**与孔洞轮廓相交、且拥有可填
+4-邻格的 feature 格数**。这一圈随 `h` 增长，所以对小孔只用百分比会过紧：32 行的鼻子只有
+10 格，到 96 行按平方缩放预期 90 格，实际 74 格（差 16），20 格的绝对下限正好覆盖；
+更大的特征则由 2% 相对项主导。`bbox_ratio` 无量纲，三档之间差异不得超过
+`bbox_ratio_abs = 0.05`。
+
+`centroid` 刻意存成格中心坐标：原始下标带 `-0.5` 偏置，不随 `h` 缩放；`(row + 0.5)` 才会。
+`hole_count` 只数命名的眼/鼻孔洞，不等同于 `len(geometry_metrics()["holes"])`——后者在某些
+分辨率下会多出 1 格的量化空洞。
+
+### E 的断言示例
+
+```python
+doc = json.loads((FIXTURES / "metrics_h32.json").read_text())
+ref, tol = doc["shapes"]["cat"]["features"]["nose"], doc["tolerance"]
+expected = ref["cells"] * (96 / 32) ** 2
+got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["nose"])
+assert abs(got - expected) <= max(tol["area_abs_cells"], tol["area_rel"] * expected)
+```
+
+`tests/test_shape_metrics.py` 还会检查三档 `features` 键集合一致、面积平方缩放、质心线性缩放、
+`bbox_ratio` 与高度无关，以及生成脚本的字节级幂等。
+
 ## 验收指标（32 行实测）
 
 | 指标 | 要求 | 实测 |

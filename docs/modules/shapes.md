@@ -119,6 +119,93 @@ holes: [{cells, centroid: {row, col}}],   # interior holes only
 code_stroke_cells
 ```
 
+## Scaled reference data for verification
+
+`tests/fixtures/shapes/metrics_h{32,64,96}.json` are generated snapshots for
+Part E. Each file covers all three shapes at one height (`circle`, `cat`, and
+`code` with `text="CODE"`). Regenerate them with:
+
+```bash
+python scripts/gen_shape_metrics.py
+```
+
+The generator calls `build_mask` + `geometry_metrics` for every shape/height;
+no value is hand-written. It is deterministic — two runs produce byte-identical
+files — and `tests/test_shape_metrics.py` checks that the committed fixtures
+still match the implementation.
+
+Top-level fields:
+
+| field | meaning |
+|---|---|
+| `schema_version` | `1` |
+| `cell_aspect` | `0.5`, the project-wide cell width / cell height |
+| `height_rows` | row count shared by all shapes in this file |
+| `generated_by` | generator path, `scripts/gen_shape_metrics.py` |
+| `tolerance` | tolerances used by E (see below) |
+| `shapes` | `circle`, `cat`, `code` → per-shape record |
+| `scaling_expectation` | prose note plus the reference height (`32`) used by the scaling formulas |
+
+Per-shape record:
+
+| field | meaning |
+|---|---|
+| `cols`, `rows` | mask size (columns depend on the shape's physical aspect ratio) |
+| `bbox_ratio` | occupied bounding-box ratio: `bbox_cols * cell_aspect / bbox_rows` |
+| `allowed_cells` | number of fillable cells |
+| `spans_total` | total number of maximal allowed runs over all rows |
+| `rows_with_multiple_spans` | rows split by at least one hole |
+| `features` | named eye/nose holes only; `{}` for `circle` and `code` |
+| `hole_count` | number of named hole features: `3` for `cat`, `0` otherwise |
+| `ear_gap_rows` | cat only: rows between the ear peaks; `null` otherwise |
+
+Each feature is:
+
+| field | meaning |
+|---|---|
+| `cells` | number of cells in the feature (the `A_ref` below) |
+| `bbox` | inclusive `[min_row, min_col, max_row, max_col]` |
+| `centroid` | `[row, col]` in **cell-centre** coordinates (`index + 0.5`) |
+
+### Tolerance contract
+
+For a feature measured at 32 rows with area `A_ref`:
+
+```
+A_expected(h) = A_ref * (h / 32) ** 2
+area_ok      = abs(cells(h) - A_expected(h)) <= max(area_abs_cells, area_rel * A_expected(h))
+centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_abs_cells
+```
+
+A rasterised hole's cell count differs from its ideal continuous area by the
+cells touching its outline — the **number of feature cells that have an allowed
+4-neighbour** (the hole-boundary ring). That ring grows with `h`, which is why
+a pure percentage is too tight for the 10-cell nose at 32 rows: at 96 rows the
+quadratic expectation is 90 cells and the measured count is 74 (residual 16),
+so the 20-cell absolute floor covers it. For larger features the 2% relative
+term dominates. `bbox_ratio` is dimensionless and must not drift with height:
+the three files may differ by at most `bbox_ratio_abs = 0.05`.
+
+`centroid` is stored in cell-centre coordinates on purpose: raw cell indices
+carry a `-0.5` bias that does not scale with `h`, while `(row + 0.5)` does.
+`hole_count` counts named eye/nose holes only; it is not
+`len(geometry_metrics()["holes"])`, which can include incidental one-cell
+quantisation components at some resolutions.
+
+### E assertion example
+
+```python
+doc = json.loads((FIXTURES / "metrics_h32.json").read_text())
+ref, tol = doc["shapes"]["cat"]["features"]["nose"], doc["tolerance"]
+expected = ref["cells"] * (96 / 32) ** 2
+got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["nose"])
+assert abs(got - expected) <= max(tol["area_abs_cells"], tol["area_rel"] * expected)
+```
+
+`tests/test_shape_metrics.py` additionally checks feature-key equality at all
+three heights, quadratic area scaling, linear centroid scaling, the
+height-invariant `bbox_ratio`, and byte-for-byte generator idempotence.
+
 ## Acceptance targets (measured at 32 rows)
 
 | metric | target | measured |
