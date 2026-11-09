@@ -9,6 +9,21 @@ Store fixed-height evidence under `fixed/` and growth demonstrations under
 `case_<function>_<shape>_h<rows>_s<scale>.c` and pair them with JSON reports.
 Do not overwrite an earlier run when the source or revision differs.
 
+## Report index
+
+- [Current status and reproduction commands](../../README.md#status)
+- [Part B shape checks](B_shapes.md)
+- [Part C layout checks](C_layout.md)
+- [Part D completion checklist](D_checklist.md)
+- [Part D detailed report](D_report.md)
+- [Part F original checks](F_acceptance.md)
+- [Part F after E integration](F_after_E.md)
+- [Part F CI and bilingual documentation follow-up](F_delivery.md)
+
+Functional acceptance and owner completion sheets have separate version
+anchors. A functional PASS does not imply every owner has submitted a
+second-round completion sheet. Each owner adds their own sheet to this index.
+
 ## Handoffs
 
 - B supplies geometry reference JSON and assertion definitions. E's acceptance
