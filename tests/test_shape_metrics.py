@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -29,7 +30,8 @@ HOLE_FEATURES = ("eye_left", "eye_right", "nose")
 TOLERANCE_KEYS = {
     "bbox_ratio_abs",
     "area_rel",
-    "area_abs_cells",
+    "area_perimeter_factor",
+    "area_min_cells",
     "centroid_abs_cells",
 }
 
@@ -63,7 +65,17 @@ def stats(cells) -> dict:
 
 
 def area_tolerance(tol: dict, expected: float) -> float:
-    return max(tol["area_abs_cells"], tol["area_rel"] * expected)
+    """Permitted absolute area delta at ``expected`` cells.
+
+    Rasterisation error scales with the number of boundary cells, i.e. with the
+    hole perimeter (~sqrt(area)), not with a constant.  The relative term still
+    dominates for large features and the floor keeps degenerate tiny holes sane.
+    """
+    return max(
+        tol["area_rel"] * expected,
+        tol["area_perimeter_factor"] * math.sqrt(expected),
+        tol["area_min_cells"],
+    )
 
 
 def sha256(path: Path) -> str:
@@ -148,6 +160,45 @@ def test_feature_areas_scale_with_height_squared(kind):
             assert got >= 1
             assert abs(got - expected) <= area_tolerance(tol, expected), (
                 kind, name, rows, got, expected)
+
+
+# -------------------------------------------------- counterexamples -----------
+# The tolerance must reject genuinely wrong geometry, not just pass the real
+# implementation.  Both cases below are the kind of bug the contract exists for.
+
+def test_counterexample_inflated_reference_eye_fails_scaling():
+    """A reference eye 1.5x too large must fail the scaling invariant.
+
+    An implementation that scales from a wrong reference can be internally
+    consistent at every height, so this pins the expectation against the real
+    32-row measurement: the genuine data passes the limit, the inflated
+    reference does not.
+    """
+    tol = load(32)["tolerance"]
+    eye_ref = load(32)["shapes"]["cat"]["features"]["eye_left"]["cells"]
+    inflated_ref = eye_ref * 1.5
+    for rows in HEIGHTS[1:]:
+        expected = inflated_ref * (rows / 32) ** 2
+        got = load(rows)["shapes"]["cat"]["features"]["eye_left"]["cells"]
+        limit = area_tolerance(tol, expected)
+        assert abs(got - expected) > limit, (rows, got, expected, limit)
+
+
+def test_counterexample_h96_eye_shrunk_by_100_fails_area_tolerance():
+    """The h96 eye losing 100 cells (371 -> 271) must exceed the tolerance.
+
+    Note the margin: the real 371 is 16 cells from the quadratic expectation of
+    387, so the limit is ~78.7 and the measurement legitimately passes.  A
+    40-cell shrink (331) is still inside that band; 100 cells is a ~26% error
+    and is exactly the kind of regression the contract must reject.
+    """
+    tol = load(96)["tolerance"]
+    eye_ref = load(32)["shapes"]["cat"]["features"]["eye_left"]["cells"]
+    expected = eye_ref * (96 / 32) ** 2
+    limit = area_tolerance(tol, expected)
+    measured = load(96)["shapes"]["cat"]["features"]["eye_left"]["cells"]
+    assert abs(measured - expected) <= limit, (measured, expected, limit)
+    assert abs((measured - 100) - expected) > limit, (measured, expected, limit)
 
 
 @pytest.mark.parametrize("kind", KINDS)

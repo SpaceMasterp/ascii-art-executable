@@ -156,15 +156,35 @@ python scripts/gen_shape_metrics.py
 
 ```
 A_expected(h) = A_ref * (h / 32) ** 2
-area_ok      = abs(cells(h) - A_expected(h)) <= max(area_abs_cells, area_rel * A_expected(h))
+area_limit(h) = max(area_rel * A_expected(h),
+                    area_perimeter_factor * sqrt(A_expected(h)),
+                    area_min_cells)
+area_ok      = abs(cells(h) - A_expected(h)) <= area_limit(h)
 centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_abs_cells
 ```
 
-栅格化孔洞的格数与理想连续面积之间会差一圈边界格——即**与孔洞轮廓相交、且拥有可填
-4-邻格的 feature 格数**。这一圈随 `h` 增长，所以对小孔只用百分比会过紧：32 行的鼻子只有
-10 格，到 96 行按平方缩放预期 90 格，实际 74 格（差 16），20 格的绝对下限正好覆盖；
-更大的特征则由 2% 相对项主导。`bbox_ratio` 无量纲，三档之间差异不得超过
-`bbox_ratio_abs = 0.05`。
+面积项刻意做成**周长级**：参考格数是在格中心采样的，孔洞实测格数与理想连续面积之差，
+来自轮廓切过的那些格，误差与孔洞**周长**成正比；而面积为 `A` 的孔洞，周长约按 `sqrt(A)`
+增长，不是常数。所以任何固定的绝对格数都会两头不对：`20` 格让 32 行只有 10 格的鼻子
+允许了 300% 误差，而 96 行眼睛本身 16 格的量化漂移就已经吃掉这份预算的 80%，几乎没给
+真正的回归留下余量。
+
+以 32 行为参考实测（`area_perimeter_factor = 4.0`、`area_rel = 0.02`、
+`area_min_cells = 2`）：
+
+| feature | h | `A_ref` | `A_expected` | 实测 | `area_limit` | 结论 |
+|---|---|---|---|---|---|---|
+| 眼 | 32 | 43 | 43 | 43 | 26.2 | 通过（参考本身） |
+| 眼 | 64 | 43 | 172 | 163 | 52.5 | 通过（漂 9 格） |
+| 眼 | 96 | 43 | 387 | 371 | 78.7 | 通过（漂 16 格） |
+| 鼻 | 32 | 10 | 10 | 10 | 12.6 | 通过（参考本身） |
+| 鼻 | 64 | 10 | 40 | 34 | 25.3 | 通过（漂 6 格） |
+| 鼻 | 96 | 10 | 90 | 74 | 37.9 | 通过（漂 16 格） |
+
+系数 4.0 对应格中心采样下圆盘边界环的规模：边界格数大致是 `4 * sqrt(A)`。这样既能容纳
+实测漂移、留一点余量，又不会放过参考值错 50% 的实现。面积更大的特征由 2% 相对项主导；
+`area_min_cells = 2` 避免退化成 1 格的孔洞拿到零预算。`bbox_ratio` 无量纲，三档之间差异
+不得超过 `bbox_ratio_abs = 0.05`。
 
 `centroid` 刻意存成格中心坐标：原始下标带 `-0.5` 偏置，不随 `h` 缩放；`(row + 0.5)` 才会。
 `hole_count` 只数命名的眼/鼻孔洞，不等同于 `len(geometry_metrics()["holes"])`——后者在某些
@@ -174,14 +194,18 @@ centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_
 
 ```python
 doc = json.loads((FIXTURES / "metrics_h32.json").read_text())
-ref, tol = doc["shapes"]["cat"]["features"]["nose"], doc["tolerance"]
+ref, tol = doc["shapes"]["cat"]["features"]["eye_left"], doc["tolerance"]
 expected = ref["cells"] * (96 / 32) ** 2
-got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["nose"])
-assert abs(got - expected) <= max(tol["area_abs_cells"], tol["area_rel"] * expected)
+limit = max(tol["area_rel"] * expected,
+            tol["area_perimeter_factor"] * expected ** 0.5,
+            tol["area_min_cells"])
+got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["eye_left"])
+assert abs(got - expected) <= limit  # 371 vs 387，limit 78.7
 ```
 
 `tests/test_shape_metrics.py` 还会检查三档 `features` 键集合一致、面积平方缩放、质心线性缩放、
-`bbox_ratio` 与高度无关，以及生成脚本的字节级幂等。
+`bbox_ratio` 与高度无关，以及生成脚本的字节级幂等。另有两个反向测试守住另一边：把参考眼
+格数放大 1.5 倍必须被缩放一致性断言拒绝；h96 眼睛少 100 格必须超出 `area_limit`。
 
 ## 验收指标（32 行实测）
 

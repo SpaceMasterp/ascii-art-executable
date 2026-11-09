@@ -173,18 +173,41 @@ For a feature measured at 32 rows with area `A_ref`:
 
 ```
 A_expected(h) = A_ref * (h / 32) ** 2
-area_ok      = abs(cells(h) - A_expected(h)) <= max(area_abs_cells, area_rel * A_expected(h))
+area_limit(h) = max(area_rel * A_expected(h),
+                    area_perimeter_factor * sqrt(A_expected(h)),
+                    area_min_cells)
+area_ok      = abs(cells(h) - A_expected(h)) <= area_limit(h)
 centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_abs_cells
 ```
 
-A rasterised hole's cell count differs from its ideal continuous area by the
-cells touching its outline — the **number of feature cells that have an allowed
-4-neighbour** (the hole-boundary ring). That ring grows with `h`, which is why
-a pure percentage is too tight for the 10-cell nose at 32 rows: at 96 rows the
-quadratic expectation is 90 cells and the measured count is 74 (residual 16),
-so the 20-cell absolute floor covers it. For larger features the 2% relative
-term dominates. `bbox_ratio` is dimensionless and must not drift with height:
-the three files may differ by at most `bbox_ratio_abs = 0.05`.
+The area term is **perimeter-scaled** on purpose. Reference cells are sampled at
+cell centres, so a hole's measured count differs from its ideal continuous area
+by the cells its outline cuts through; that error is proportional to the hole's
+**perimeter**, and for area `A` the perimeter grows like `sqrt(A)`, not like a
+constant. One fixed absolute number is therefore wrong at both ends of the
+range: `20` cells allowed a 300% error on the 10-cell nose at 32 rows, while at
+96 rows the eye's 16-cell quantisation drift already consumed 80% of the same
+budget and left almost no headroom for a real regression.
+
+Measured against the 32-row reference (`area_perimeter_factor = 4.0`,
+`area_rel = 0.02`, `area_min_cells = 2`):
+
+| feature | h | `A_ref` | `A_expected` | measured | `area_limit` | verdict |
+|---|---|---|---|---|---|---|
+| eye | 32 | 43 | 43 | 43 | 26.2 | pass (exact reference) |
+| eye | 64 | 43 | 172 | 163 | 52.5 | pass (9-cell drift) |
+| eye | 96 | 43 | 387 | 371 | 78.7 | pass (16-cell drift) |
+| nose | 32 | 10 | 10 | 10 | 12.6 | pass (exact reference) |
+| nose | 64 | 10 | 40 | 34 | 25.3 | pass (6-cell drift) |
+| nose | 96 | 10 | 90 | 74 | 37.9 | pass (16-cell drift) |
+
+The factor 4.0 reflects the boundary ring of a centre-sampled rasterised disc,
+which is roughly `4 * sqrt(A)` cells: it admits the observed drift with a modest
+margin while still rejecting a reference that is off by 50%. For large features
+the 2% relative term takes over; `area_min_cells = 2` keeps degenerate one-cell
+holes from having a zero budget. `bbox_ratio` is dimensionless and must not
+drift with height: the three files may differ by at most
+`bbox_ratio_abs = 0.05`.
 
 `centroid` is stored in cell-centre coordinates on purpose: raw cell indices
 carry a `-0.5` bias that does not scale with `h`, while `(row + 0.5)` does.
@@ -196,15 +219,21 @@ quantisation components at some resolutions.
 
 ```python
 doc = json.loads((FIXTURES / "metrics_h32.json").read_text())
-ref, tol = doc["shapes"]["cat"]["features"]["nose"], doc["tolerance"]
+ref, tol = doc["shapes"]["cat"]["features"]["eye_left"], doc["tolerance"]
 expected = ref["cells"] * (96 / 32) ** 2
-got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["nose"])
-assert abs(got - expected) <= max(tol["area_abs_cells"], tol["area_rel"] * expected)
+limit = max(tol["area_rel"] * expected,
+            tol["area_perimeter_factor"] * expected ** 0.5,
+            tol["area_min_cells"])
+got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["eye_left"])
+assert abs(got - expected) <= limit  # 371 vs 387, limit 78.7
 ```
 
 `tests/test_shape_metrics.py` additionally checks feature-key equality at all
 three heights, quadratic area scaling, linear centroid scaling, the
-height-invariant `bbox_ratio`, and byte-for-byte generator idempotence.
+height-invariant `bbox_ratio`, and byte-for-byte generator idempotence. Two
+negative controls guard the contract from the other side: a reference eye
+inflated by 1.5x must fail the scaling invariant, and the h96 eye losing 100
+cells must exceed `area_limit`.
 
 ## Acceptance targets (measured at 32 rows)
 

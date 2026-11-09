@@ -6,7 +6,8 @@
   "tolerance": {
     "bbox_ratio_abs": 0.05,
     "area_rel": 0.02,
-    "area_abs_cells": 20,
+    "area_perimeter_factor": 4.0,
+    "area_min_cells": 2,
     "centroid_abs_cells": 1.0
   },
   "shapes": {

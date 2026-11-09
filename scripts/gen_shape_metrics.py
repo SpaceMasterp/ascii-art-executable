@@ -42,13 +42,20 @@ KINDS = ("circle", "cat", "code")
 HOLE_FEATURES = ("eye_left", "eye_right", "nose")
 SCHEMA_VERSION = 1
 
-#: Tolerance contract consumed by Part E.  The absolute area floor covers the
-#: boundary-quantisation error of small holes (the nose is 10 cells at 32 rows
-#: and 74 cells at 96 rows; naive quadratic scaling predicts 90).
+#: Tolerance contract consumed by Part E.  Area error is not constant: it scales
+#: with the number of boundary cells, i.e. with the hole's perimeter, which grows
+#: like sqrt(A).  A single fixed floor is therefore simultaneously too loose for
+#: the 10-cell nose at 32 rows and too tight for the 371-cell eye at 96 rows
+#: (whose centre-sampling drift is already 16 cells).  The permitted area delta is
+#:
+#:     max(area_rel * expected, area_perimeter_factor * sqrt(expected), area_min_cells)
+#:
+#: with ``expected = A_ref * (h / 32) ** 2`` measured against the 32-row reference.
 TOLERANCE = {
     "bbox_ratio_abs": 0.05,
     "area_rel": 0.02,
-    "area_abs_cells": 20,
+    "area_perimeter_factor": 4.0,
+    "area_min_cells": 2,
     "centroid_abs_cells": 1.0,
 }
 SCALING_NOTE = "面积按 (h/32)^2 缩放；位置按 h/32 缩放；bbox_ratio 与 h 无关"
