@@ -23,6 +23,25 @@ Do not overwrite an earlier run when the source or revision differs.
   files is a follow-up for E that must preserve that identity and input set.
 - F owns local operation, preview, exports, environment setup and CI.
 
+## Automatic growth demonstration
+
+Run the production CLI with the default initial scale. The input has a
+string token that is too wide for the circle at 32 or 40 rows.
+
+```sh
+run_dir=$(mktemp -d)
+python -m codeart.cli --source docs/reports/scaled/auto_grow_input.c --shape circle \
+  --output "$run_dir/case_auto_grow_circle_h50_s1.5625.c" \
+  --report "$run_dir/case_auto_grow_circle_h50_s1.5625.json"
+```
+
+A clean checkout of `571ce7dffa4356a31f6ecc09f475ea72a42a3064` recorded
+failed attempts at 32 and 40 rows, then succeeded at 50 rows. Token, geometry
+and compilation passed. Behavior was `NOT_RUN (NO_FIXTURE)` for the custom
+input. The [generated C file](scaled/case_auto_grow_circle_h50_s1.5625.c)
+and [JSON report](scaled/case_auto_grow_circle_h50_s1.5625.json) preserve the
+output and attempt history.
+
 ## Error demonstrations
 
 1. Non-ASCII input produces `UNSUPPORTED_SOURCE` with source line and column.

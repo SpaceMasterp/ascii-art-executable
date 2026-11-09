@@ -27,6 +27,19 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if not 1 <= args.scale <= 4:
         parser.error("--scale must be between 1 and 4")
+    if args.report is not None:
+        try:
+            report_path = args.report.resolve()
+            for option, path in (("--source", args.source), ("--output", args.output)):
+                if path is None:
+                    continue
+                same_path = report_path == path.resolve()
+                if same_path or (
+                    report_path.exists() and path.exists() and report_path.samefile(path)
+                ):
+                    parser.error(f"--report and {option} must refer to different files")
+        except (OSError, RuntimeError) as exc:
+            parser.exit(2, f"Cannot check report path: {exc}\n")
     selection = select_builtin(args.sample) if args.sample else None
 
     try:

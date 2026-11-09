@@ -1,8 +1,11 @@
 """CLI sample eligibility and source/report output through the normal entry point."""
 
 import json
+import os
 import subprocess
 import sys
+
+import pytest
 
 from codeart.presentation import describe_result
 from codeart.contracts import Diagnostic, ErrorCode, GenerationResult
@@ -23,6 +26,35 @@ def test_cli_real_sample_source_and_report(tmp_path):
     assert report["layout"]["scale"] == 1.5
     assert output.read_bytes() == report["source_text"].encode()
     assert output.read_bytes().endswith(b"\n")
+
+
+@pytest.mark.parametrize(("option", "alias"), [
+    ("--source", "direct"), ("--source", "symlink"),
+    ("--output", "direct"), ("--output", "hardlink"),
+])
+def test_cli_rejects_report_paths_that_alias_source_files(tmp_path, option, alias):
+    source_file = tmp_path / "case.c"
+    original = b"int f(void) { return __LINE__; }\n"
+    source_file.write_bytes(original)
+    report = source_file
+    if alias == "symlink":
+        report = tmp_path / "report.json"
+        report.symlink_to(source_file)
+    elif alias == "hardlink":
+        report = tmp_path / "report.json"
+        os.link(source_file, report)
+    arguments = [] if option == "--source" else ["--sample", "max2"]
+
+    result = subprocess.run(
+        [sys.executable, "-m", "codeart.cli", *arguments,
+         option, str(source_file), "--report", str(report)],
+        capture_output=True, text=True, timeout=35,
+    )
+
+    assert result.returncode == 2
+    assert f"--report and {option} must refer to different files" in result.stderr
+    assert source_file.read_bytes() == original
+    assert report.read_bytes() == original
 
 
 def test_failed_layout_keeps_attempt_history():

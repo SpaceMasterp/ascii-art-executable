@@ -76,6 +76,8 @@ function name alone does not select an executable fixture.
 Exit status is nonzero for failed checks or pipeline diagnostics. A custom
 function can succeed with behavior `NOT_RUN` when token, geometry and compile
 checks pass. Output and diagnostics use stdout and stderr respectively.
+Use a separate file for `--report` so it cannot overwrite the source input
+or the generated C file.
 The earlier `--demo` option remains a fixed smoke fixture with simulated
 A/C/D/E stages and explicit `NOT_RUN` checks.
 
@@ -93,10 +95,10 @@ as verified. Behavior is skipped for canvases above the configured cell limit.
 
 ## Fixed-size acceptance
 
-E's public command archives the real six-function by three-shape matrix:
+E's public command archives the six-function by three-shape matrix.
 
 ```sh
-python -m scripts.run_verification --output-dir docs/reports/<run-id>/fixed
+python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 ```
 
 Use a new directory for each run. The report identifies the commit and
@@ -104,6 +106,8 @@ worktree state, records 18 h32 outputs and counts actual behavior comparisons.
 Scaled-cat acceptance is reported separately. See
 [the verification guide](docs/modules/verify.md) and
 [the updated F integration evidence](docs/reports/F_after_E.md).
+The [automatic growth demonstration](docs/reports/README.md#automatic-growth-demonstration)
+shows how to reproduce and inspect layout retries.
 
 ## Team integration and delivery
 
