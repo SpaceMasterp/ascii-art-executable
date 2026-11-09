@@ -117,7 +117,10 @@ A/C/D/E stages and explicit `NOT_RUN` checks.
 Input is one self-contained C11 function using printable ASCII. Parameters,
 automatic locals and recursion are supported. External declarations,
 preprocessing dependencies, static locals, line splicing, trigraphs and real
-tabs inside tokens are rejected. See [source analysis](docs/modules/source.md).
+tabs inside tokens are rejected. Predefined macro names such as `__LINE__`,
+`__FILE__` and `__COUNTER__` are rejected by name even without a directive, and
+GNU extension keywords such as `__asm__` are outside the frozen scope.
+See [source analysis](docs/modules/source.md).
 
 The verification evidence supports token preservation, C11 compilation and
 matching behavior on the specified sample inputs. A skipped check is shown

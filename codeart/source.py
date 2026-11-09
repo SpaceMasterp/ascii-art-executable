@@ -20,6 +20,19 @@ from .procutil import (
     BuildFailed, BuildSession, CommandTimedOut, DependencyUnavailable, WorkStopped, run_command,
 )
 
+__all__ = ("analyze_source", "can_join", "lex_source", "prepare_profile")
+
+# Coordinates reported for the original text; the worker reports the same
+# one-based convention after normalization.
+_TRIGRAPH = re.compile(r"\?\?[=/'()!<>-]")
+_LINE_SPLICE = re.compile(r"\\(?:\r\n|\r|\n)")
+_COMPILER_ERROR = re.compile(r"input\.c:(\d+):(\d+): (?:fatal )?error:")
+
+
+def _position(text, offset):
+    """Return one-based line and column for an offset in the original text."""
+    return text.count("\n", 0, offset) + 1, offset - text.rfind("\n", 0, offset)
+
 
 class _AnalysisContext:
     """Keep one analysis deadline while retaining the caller's stop semantics."""
@@ -35,7 +48,7 @@ class _AnalysisContext:
 
     def check(self):
         self.parent.check()
-        if self.remaining_s() == 0:
+        if self.remaining_s() <= 0:
             raise StageError(Diagnostic(
                 ErrorCode.ANALYSIS_TIMEOUT, "analysis", "Clang analysis timed out"
             ))
@@ -46,16 +59,21 @@ def _unsupported(message, line=None, column=None):
 
 
 def _normalize(text, ctx):
+    """Reject characters and phases the layout cannot reproduce, then use LF."""
     for line, content in enumerate(text.splitlines(keepends=True), 1):
         ctx.check()
         for column, char in enumerate(content, 1):
+            # Printable ASCII plus the accepted newline forms and out-of-token tabs.
             if char not in "\r\n\t" and not " " <= char <= "~":
                 raise _unsupported("Only printable ASCII source is supported", line, column)
-    match = re.search(r"\\(?:\r\n|\r|\n)|\?\?[=/'()!<>-]", text)
-    if match:
-        line = text.count("\n", 0, match.start()) + 1
-        column = match.start() - text.rfind("\n", 0, match.start())
-        raise _unsupported("Line splicing and trigraphs are unsupported", line, column)
+    for pattern, message in (
+        (_LINE_SPLICE, "Line splicing is unsupported"),
+        (_TRIGRAPH, "Trigraphs are unsupported"),
+    ):
+        match = pattern.search(text)
+        if match:
+            line, column = _position(text, match.start())
+            raise _unsupported(message, line, column)
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -103,16 +121,26 @@ def _check_reply(reply):
     return reply
 
 
+def _first_compiler_error(stderr):
+    """Locate the first error the compiler reported for the temporary input."""
+    match = _COMPILER_ERROR.search(stderr or "")
+    if match is None:
+        return None, None
+    return int(match.group(1)), int(match.group(2))
+
+
 def _check_object(text, profile, ctx):
+    """Compile the original source as an object; no main and no linking."""
     try:
         with BuildSession() as builds:
             compiler = builds.compiler_info(profile, ctx)
             builds.build("object", text if text.endswith("\n") else text + "\n", "",
                          compiler=compiler, ctx=ctx, timeout=profile.compile_timeout)
     except BuildFailed as exc:
+        line, column = _first_compiler_error(exc.result.stderr)
         raise StageError(Diagnostic(
             ErrorCode.INVALID_SOURCE, "analysis", "Input failed C11 object compilation",
-            details={"stderr": exc.result.stderr},
+            line, column, {"stderr": exc.result.stderr},
         )) from exc
     except DependencyUnavailable as exc:
         raise StageError(Diagnostic(ErrorCode.DEPENDENCY_UNAVAILABLE, "analysis", str(exc))) from exc
@@ -147,6 +175,12 @@ def prepare_profile(profile: VerificationProfile) -> VerificationProfile:
 
 
 def analyze_source(text: str, profile: VerificationProfile | None = None, *, ctx=None):
+    """Validate one self-contained C11 function and return its raw token stream.
+
+    Raises `StageError` with a shared `Diagnostic`. Text is checked before any
+    child process starts, so unsupported characters, line splices and trigraphs
+    report original line and column even when libclang is unavailable.
+    """
     profile = prepare_profile(profile or VerificationProfile())
     ctx = ctx or RunContext(monotonic() + profile.lex_timeout)
     ctx = _AnalysisContext(ctx, profile.lex_timeout)
@@ -157,12 +191,9 @@ def analyze_source(text: str, profile: VerificationProfile | None = None, *, ctx
     comments = []
     for raw in reply["tokens"]:
         ctx.check()
-        if raw["is_comment"]:
-            comments.append(Token(len(comments), raw["kind"], raw["spelling"],
-                                  len(raw["spelling"]), raw["line"], raw["column"]))
-        else:
-            tokens.append(Token(len(tokens), raw["kind"], raw["spelling"],
-                                len(raw["spelling"]), raw["line"], raw["column"]))
+        target = comments if raw["is_comment"] else tokens
+        target.append(Token(len(target), raw["kind"], raw["spelling"],
+                            len(raw["spelling"]), raw["line"], raw["column"]))
     return SourceModel(text, normalized, tuple(tokens), profile,
                        reply["function_name"], reply["signature"], tuple(comments))
 
@@ -180,9 +211,19 @@ def _can_join_cached(expected, flags, timeout):
 
 
 def can_join(run_tokens, next_token, profile=None):
-    """Re-lex the complete contiguous run and compare kind and raw spelling."""
+    """Re-lex the complete contiguous run and compare kind and raw spelling.
+
+    `run_tokens` is the current run of tokens that would be adjacent to
+    `next_token` with no separator. The decision is made on the concatenated
+    spelling, not on the pair alone, so three separate `.` tokens or a `+`
+    followed by `+` are rejected even though each neighbour looks joinable.
+    Results are cached by token kinds, spellings, compiler flags and lexer
+    timeout; the cache is shared by the serialized worker process.
+    """
     profile = profile or VerificationProfile()
     if not run_tokens:
         return True
     expected = tuple((token.kind, token.spelling) for token in (*run_tokens, next_token))
+    if any(not spelling for kind, spelling in expected):
+        raise ValueError("Token spellings must not be empty")
     return _can_join_cached(expected, tuple(profile.flags), profile.lex_timeout)

@@ -101,8 +101,10 @@ python -m codeart.cli --source example.c --shape circle --output generated.c
 ## 输入范围
 
 只接收一个自包含 C11 函数，使用可打印 ASCII。支持参数、自动局部变量和
-自身递归。拒绝外部声明、预处理依赖、static 局部变量、反斜杠续行、三字符组
-和 token 内的真实 tab。详见 [A 的源码说明](docs/modules/source.md)。
+自身递归。拒绝外部声明、预处理依赖、static 局部变量、反斜杠续行、三字符组、
+token 内的真实 tab、预定义宏名（`__LINE__`、`__FILE__`、`__COUNTER__` 等，
+不需要 `#` 也拒绝）以及 GNU 扩展关键字（`__asm__` 等）。
+详见 [A 的源码说明](docs/modules/source.md)。
 
 结果提供词法保持、编译通过及给定样例行为一致的证据。没有执行的检查显示
 NOT_RUN 和原因；几何失败时不会显示整体验证通过。
