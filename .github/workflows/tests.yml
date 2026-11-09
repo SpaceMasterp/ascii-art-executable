@@ -2,7 +2,10 @@ name: Python tests
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -38,6 +41,9 @@ jobs:
           tests/test_verification_cli.py
   full:
     name: Full checks (macOS, clang + node)
+    if: >-
+      github.event_name != 'pull_request'
+      || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: macos-15
     timeout-minutes: 20
     permissions:
