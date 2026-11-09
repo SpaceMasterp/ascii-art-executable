@@ -25,7 +25,9 @@ changes the layout.
 
 ## Tests
 
-`tests/test_fill.py` has 33 tests:
+`tests/test_fill.py` has 33 tests; `tests/test_generate_d_reports.py` adds 3
+generator regressions (existing-directory refusal, status aggregation, partial
+result archiving).
 
 - fake-mask boundary tests: internal and tail gaps 1–10, real `/` adjacency,
   line comment before a later token, cat multi-span rows, disabled line
@@ -35,10 +37,16 @@ changes the layout.
   checks, then `clang -std=c11 -pedantic-errors -c`.
 
 `scripts/generate_d_reports.py` regenerates 18 ordinary-input cases
-(6 functions × 3 shapes) and their logs, manifest and check table. Evidence is
-anchored to the base commit recorded as `main@<sha>`.
+(6 functions × 3 shapes) and their logs, manifest and check table. It requires
+a fresh `--output-dir`, refuses to overwrite an existing directory, never
+deletes other members' evidence, and exits non-zero when a required check is
+not PASS or only a partial result is available. Evidence records the full
+HEAD, branch, dirty flag and base commit.
 
-## Results (main@6ae7bc6 snapshot)
+## Results
+
+Snapshot: HEAD `73b6c96f8684dd957f892b235c1c879f28107596`, branch
+`part-d-real-layout` (dirty: `no`), base `main@94cd53d`.
 
 | metric | result |
 |---|---|
@@ -65,6 +73,7 @@ anchored to the base commit recorded as `main@<sha>`.
 
 ## Artifacts
 
-- `docs/reports/case_<function>_<shape>_h<rows>_s<scale>.c` and `.log`
-- `docs/reports/D_manifest.csv`
-- `docs/reports/D_checklist.md` and `docs/reports/D_cases.md`
+- `docs/reports/part-d/2026-11-09_fixed/case_<function>_<shape>_h<rows>_s<scale>.c` and `.log`
+- `docs/reports/part-d/2026-11-09_fixed/D_manifest.csv`
+- `docs/reports/part-d/2026-11-09_fixed/D_cases.md`
+- `docs/reports/D_checklist.md` (summary)

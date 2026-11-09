@@ -113,16 +113,19 @@ that is E's job.
 
 ## Real-layout evidence
 
-`scripts/generate_d_reports.py` regenerates the 18 ordinary-input cases
-(6 functions × 3 shapes) under `docs/reports/`. Evidence is anchored to the
-base commit recorded as `main@<sha>` in the manifest and check table.
+`scripts/generate_d_reports.py` writes the 18 ordinary-input cases
+(6 functions × 3 shapes) into a **fresh** `--output-dir`. It refuses an existing
+directory, never deletes other members' evidence, and exits non-zero when a
+required check is not PASS, diagnostics are present, or only a partial result
+is available. Evidence records the full HEAD, branch, dirty flag and base.
 
 - `case_<function>_<shape>_h<rows>_s<scale>.c` plus a matching `.log`;
 - `D_manifest.csv` with statuses, coverage split, comment counts, attempts,
   scale, duration and the independent compile result;
-- `D_cases.md` and `D_checklist.md`, the human-readable tables.
+- `D_cases.md`, the run-local table; `D_checklist.md` summarizes the DoD.
 
-Measured on `main@6ae7bc6` (macOS arm64, Python 3.11, Apple clang 21):
+Measured at HEAD `73b6c96f8684dd957f892b235c1c879f28107596`
+(branch `part-d-real-layout`, dirty: no, base `main@94cd53d`):
 
 | metric | result |
 |---|---|
