@@ -1,6 +1,6 @@
 # Part D — completion checklist
 
-- **Evidence HEAD:** `73b6c96f8684dd957f892b235c1c879f28107596`
+- **Evidence HEAD:** `fff14b9ce23c4da0d64ab5aac7bf38482a601ea2`
 - **Branch:** `part-d-real-layout` (dirty: `no`)
 - **Base:** `main@94cd53d`
 - **Host:** macOS 26.5.1 arm64
@@ -19,16 +19,16 @@ only a partial result is available.
 
 | Case | Commit | Input | Command | Expected | Actual | Evidence | Conclusion |
 |---|---|---|---|---|---|---|---|
-| Fake-layout boundary tests | `73b6c96` | masks/tokens built in the test | `python -m pytest tests/test_fill.py -q` | all boundary tests pass | 33 passed | `tests/test_fill.py` | PASS |
-| Real A→C→D regression | `73b6c96` | `div`, `gcd` × circle/cat/code | `python -m pytest tests/test_fill.py -q` | 6 real-layout cases pass | 6 passed | `tests/test_fill.py::test_real_layout_relexes_geometry_and_compiles` | PASS |
-| 18 ordinary-input outputs | `73b6c96` | `max2`, `min2`, `clamp`, `absdiff`, `gcd`, `sum_to_n` × 3 shapes | `python scripts/generate_d_reports.py --output-dir docs/reports/part-d/2026-11-09_fixed` | 18/18 token/geometry/compile PASS | 18/18 PASS; behavior 18/18 `NOT_RUN (NO_FIXTURE)` | `docs/reports/part-d/2026-11-09_fixed/D_cases.md` | PASS |
-| Division adjacency | `73b6c96` | `sum_to_n` (`(n + 1) / 2`), `div` | generator + `tests/test_fill.py` | no `//` or `/*` immediately after a real `/` | no violation found | `case_sum_to_n_*_h32_s1.c`, real-layout test | PASS |
-| Short gaps | `73b6c96` | internal gaps 1–10, tail gaps 1–10 | `python -m pytest tests/test_fill.py -q` | gaps <4 stay blank; `/**/` at 4 | assertions pass | `tests/test_fill.py` gap tests | PASS |
-| Line-end comments | `73b6c96` | all 18 outputs | generator | every `//` reaches the row end | `line_tail_ok = YES` in 18/18 | `D_cases.md` | PASS |
-| Hole blanks | `73b6c96` | cat eyes/nose, hollow CODE strokes | generator | hole ink = 0 | 0 in 18/18 | `D_manifest.csv` | PASS |
-| Coverage split | `73b6c96` | all 18 outputs | generator | token / block / line contributions reported | three columns populated in 18/18 | `D_manifest.csv` | PASS |
-| Independent compile | `73b6c96` | all 18 outputs | generator | `clang -std=c11 -pedantic-errors -c` rc 0 | rc 0 in 18/18 | `D_cases.md` | PASS |
-| Generator refusal / partial result | `73b6c96` | existing directory; cancelled-after-render result | `python -m pytest tests/test_generate_d_reports.py -q` | refuse overwrite; archive partial and exit non-zero | 3 passed | `tests/test_generate_d_reports.py` | PASS |
+| Fake-layout boundary tests | `fff14b9` | masks/tokens built in the test | `python -m pytest tests/test_fill.py -q` | all boundary tests pass | 33 passed | `tests/test_fill.py` | PASS |
+| Real A→C→D regression | `fff14b9` | `div`, `gcd` × circle/cat/code | `python -m pytest tests/test_fill.py -q` | 6 real-layout cases pass | 6 passed | `tests/test_fill.py::test_real_layout_relexes_geometry_and_compiles` | PASS |
+| 18 ordinary-input outputs | `fff14b9` | `max2`, `min2`, `clamp`, `absdiff`, `gcd`, `sum_to_n` × 3 shapes | `python scripts/generate_d_reports.py --output-dir docs/reports/part-d/2026-11-09_fixed` | 18/18 token/geometry/compile PASS | 18/18 PASS; behavior 18/18 `NOT_RUN (NO_FIXTURE)` | `docs/reports/part-d/2026-11-09_fixed/D_cases.md` | PASS |
+| Division adjacency | `fff14b9` | `sum_to_n` (`(n + 1) / 2`), `div` | generator + `tests/test_fill.py` | no `//` or `/*` immediately after a real `/` | no violation found | `case_sum_to_n_*_h32_s1.c`, real-layout test | PASS |
+| Short gaps | `fff14b9` | internal gaps 1–10, tail gaps 1–10 | `python -m pytest tests/test_fill.py -q` | gaps <4 stay blank; `/**/` at 4 | assertions pass | `tests/test_fill.py` gap tests | PASS |
+| Line-end comments | `fff14b9` | all 18 outputs | generator | every `//` reaches the row end | `line_tail_ok = YES` in 18/18 | `D_cases.md` | PASS |
+| Hole blanks | `fff14b9` | cat eyes/nose, hollow CODE strokes | generator | hole ink = 0 | 0 in 18/18 | `D_manifest.csv` | PASS |
+| Coverage split | `fff14b9` | all 18 outputs | generator | token / block / line contributions reported | three columns populated in 18/18 | `D_manifest.csv` | PASS |
+| Independent compile | `fff14b9` | all 18 outputs | generator | `clang -std=c11 -pedantic-errors -c` rc 0 | rc 0 in 18/18 | `D_cases.md` | PASS |
+| Generator refusal / partial result | `fff14b9` | existing directory; cancelled-after-render result | `python -m pytest tests/test_generate_d_reports.py -q` | refuse overwrite; archive partial and exit non-zero | 3 passed | `tests/test_generate_d_reports.py` | PASS |
 
 ## Full test run
 

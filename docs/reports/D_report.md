@@ -45,7 +45,7 @@ HEAD, branch, dirty flag and base commit.
 
 ## Results
 
-Snapshot: HEAD `73b6c96f8684dd957f892b235c1c879f28107596`, branch
+Snapshot: HEAD `fff14b9ce23c4da0d64ab5aac7bf38482a601ea2`, branch
 `part-d-real-layout` (dirty: `no`), base `main@94cd53d`.
 
 | metric | result |

@@ -1,0 +1,13 @@
+head: fff14b9ce23c4da0d64ab5aac7bf38482a601ea2
+branch: part-d-real-layout dirty: no
+case: absdiff_circle (32 rows, scale 1)
+token: PASS
+geometry: PASS
+compile: PASS
+behavior: NOT_RUN (NO_FIXTURE)
+coverage: 0.9969 (token 0.0254, block 0.0000, line 0.9715)
+comment_cells: {'block': 0, 'line': 1566}
+attempts: 1
+clang -c rc: 0
+diagnostics: -
+stderr: 
