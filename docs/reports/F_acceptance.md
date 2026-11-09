@@ -1,5 +1,7 @@
 # Part F completion checks
 
+After merging Part E, see [the updated validation](F_after_E.md).
+
 Code under test is commit `a6b3662f0f964064a8d2665b34fe1b0e102805e2`, based on
 main `6ae7bc6422329db9f7f8847bca57cc7b491d98ab`.
 Generated evidence files were uncommitted during the run; the environment

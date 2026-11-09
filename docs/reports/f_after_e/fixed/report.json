@@ -1,0 +1,2030 @@
+{
+  "schema_version": 1,
+  "commit": "42a61c78756f543dfd865ff8fc4ffa96474fcd67",
+  "checkout_dirty": false,
+  "python": "3.14.7",
+  "height_rows": 32,
+  "fixed_matrix_passed": true,
+  "behavior_comparisons": 144,
+  "build_counts": {
+    "object": 18,
+    "original": 6,
+    "rendered": 18
+  },
+  "elapsed_s": 9.358473333000802,
+  "interrupted": null,
+  "cat_scales": {
+    "1": {
+      "status": "NOT_RUN",
+      "issues": [
+        "MISSING_REFERENCE"
+      ]
+    },
+    "2": {
+      "status": "NOT_RUN",
+      "issues": [
+        "MISSING_REFERENCE"
+      ]
+    },
+    "4": {
+      "status": "NOT_RUN",
+      "issues": [
+        "MISSING_REFERENCE"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "fixture": "max2",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_max2_circle_h32.c",
+      "elapsed_s": 0.8746490409994294,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9962779156327544,
+          "token_coverage": 0.02109181141439206,
+          "comment_coverage": 0.9751861042183623,
+          "comment_cells": {
+            "block": 0,
+            "line": 1572
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.04628170899923134,
+          "geometry": 0.0006882919988129288,
+          "compile": 0.03737487500075076,
+          "behavior": 0.3334398749993852
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "max2",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_max2_cat_h32.c",
+      "elapsed_s": 0.2739265420004813,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9977203647416414,
+          "token_coverage": 0.025835866261398176,
+          "comment_coverage": 0.9718844984802432,
+          "comment_cells": {
+            "block": 230,
+            "line": 1049
+          },
+          "ear_coverage": {
+            "ear_left": 0.9844961240310077,
+            "ear_right": 0.9922480620155039
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.04141633299877867,
+          "geometry": 0.0009128750007221242,
+          "compile": 0.02330716700089397,
+          "behavior": 0.11577583300095284
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "max2",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_max2_code_h32.c",
+      "elapsed_s": 0.6422471669993683,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9987963408762638,
+          "token_coverage": 0.008184882041405874,
+          "comment_coverage": 0.990611458834858,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1987
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.05178966699895682,
+          "geometry": 0.002314542000021902,
+          "compile": 0.029513375000533415,
+          "behavior": 0.13813724999999977
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "min2",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_min2_circle_h32.c",
+      "elapsed_s": 0.4911760000013601,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9962779156327544,
+          "token_coverage": 0.02109181141439206,
+          "comment_coverage": 0.9751861042183623,
+          "comment_cells": {
+            "block": 0,
+            "line": 1572
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.0528950830012036,
+          "geometry": 0.0006246670000109589,
+          "compile": 0.02569750000111526,
+          "behavior": 0.29681404099937936
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "min2",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_min2_cat_h32.c",
+      "elapsed_s": 0.307341166999322,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9977203647416414,
+          "token_coverage": 0.025835866261398176,
+          "comment_coverage": 0.9718844984802432,
+          "comment_cells": {
+            "block": 230,
+            "line": 1049
+          },
+          "ear_coverage": {
+            "ear_left": 0.9844961240310077,
+            "ear_right": 0.9922480620155039
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.04059400000005553,
+          "geometry": 0.0008838749999995343,
+          "compile": 0.0211982499986334,
+          "behavior": 0.16276391700012027
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "min2",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_min2_code_h32.c",
+      "elapsed_s": 0.6027678749996994,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9987963408762638,
+          "token_coverage": 0.008184882041405874,
+          "comment_coverage": 0.990611458834858,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1987
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.1265983330013114,
+          "geometry": 0.0028942090011696564,
+          "compile": 0.09012720899954729,
+          "behavior": 0.29792729200016765
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "clamp",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_clamp_circle_h32.c",
+      "elapsed_s": 1.1938437080007134,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9956575682382134,
+          "token_coverage": 0.03225806451612903,
+          "comment_coverage": 0.9633995037220844,
+          "comment_cells": {
+            "block": 0,
+            "line": 1553
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.21172558299986122,
+          "geometry": 0.0007803749995218823,
+          "compile": 0.04296516700014763,
+          "behavior": 0.5235319589992287
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "clamp",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_clamp_cat_h32.c",
+      "elapsed_s": 0.7068633340004453,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9946808510638298,
+          "token_coverage": 0.03951367781155015,
+          "comment_coverage": 0.9551671732522796,
+          "comment_cells": {
+            "block": 218,
+            "line": 1039
+          },
+          "ear_coverage": {
+            "ear_left": 0.9612403100775194,
+            "ear_right": 0.9844961240310077
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.06387454200012144,
+          "geometry": 0.0013533330002246657,
+          "compile": 0.06501533299888251,
+          "behavior": 0.22580845800075622
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "clamp",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_clamp_code_h32.c",
+      "elapsed_s": 0.5091019999999844,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9985556090515166,
+          "token_coverage": 0.012518054886856042,
+          "comment_coverage": 0.9860375541646605,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1968
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.07047058399984962,
+          "geometry": 0.002224707999630482,
+          "compile": 0.030767165999350254,
+          "behavior": 0.17235991599955014
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "absdiff",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_absdiff_circle_h32.c",
+      "elapsed_s": 0.5487437089996092,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9968982630272953,
+          "token_coverage": 0.02543424317617866,
+          "comment_coverage": 0.9714640198511166,
+          "comment_cells": {
+            "block": 0,
+            "line": 1566
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.05932733299960091,
+          "geometry": 0.001973250000446569,
+          "compile": 0.05411120899952948,
+          "behavior": 0.28640850000010687
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "absdiff",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_absdiff_cat_h32.c",
+      "elapsed_s": 0.31946208299996215,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.993920972644377,
+          "token_coverage": 0.03115501519756839,
+          "comment_coverage": 0.9627659574468085,
+          "comment_cells": {
+            "block": 223,
+            "line": 1044
+          },
+          "ear_coverage": {
+            "ear_left": 0.9534883720930233,
+            "ear_right": 0.9844961240310077
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.047511291999398964,
+          "geometry": 0.0010204999998677522,
+          "compile": 0.02524387499943259,
+          "behavior": 0.12476079200132517
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "absdiff",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_absdiff_code_h32.c",
+      "elapsed_s": 0.3068515840004693,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9987963408762638,
+          "token_coverage": 0.009870004814636495,
+          "comment_coverage": 0.9889263360616274,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1980
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.04865624999911233,
+          "geometry": 0.001935542000865098,
+          "compile": 0.026326584000344155,
+          "behavior": 0.13873208299992257
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "gcd",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_gcd_circle_h32.c",
+      "elapsed_s": 0.4840869580002618,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9944168734491315,
+          "token_coverage": 0.04528535980148883,
+          "comment_coverage": 0.9491315136476427,
+          "comment_cells": {
+            "block": 0,
+            "line": 1530
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.050950541999554844,
+          "geometry": 0.0007501250001951121,
+          "compile": 0.02577812500021537,
+          "behavior": 0.2635766670009616
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "gcd",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_gcd_cat_h32.c",
+      "elapsed_s": 0.30268966699986777,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9886018237082067,
+          "token_coverage": 0.05547112462006079,
+          "comment_coverage": 0.9331306990881459,
+          "comment_cells": {
+            "block": 204,
+            "line": 1024
+          },
+          "ear_coverage": {
+            "ear_left": 0.8914728682170543,
+            "ear_right": 0.9922480620155039
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.045135291999031324,
+          "geometry": 0.000931417000174406,
+          "compile": 0.023068792001140537,
+          "behavior": 0.12140200000067125
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "gcd",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_gcd_code_h32.c",
+      "elapsed_s": 0.3489975000011327,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9985556090515166,
+          "token_coverage": 0.017573423206547905,
+          "comment_coverage": 0.9809821858449687,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1947
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.04316991599989706,
+          "geometry": 0.0019345420005265623,
+          "compile": 0.024809665999782737,
+          "behavior": 0.1923125000012078
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "sum_to_n",
+      "shape": "circle",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_sum_to_n_circle_h32.c",
+      "elapsed_s": 0.7315433330004453,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "circle",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 64,
+            "rows": 32,
+            "ratio": 1.0
+          },
+          "allowed_cells": 1612,
+          "spans_total": 32,
+          "rows_with_multiple_spans": 0,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9981389578163772,
+          "token_coverage": 0.021712158808933003,
+          "comment_coverage": 0.9764267990074442,
+          "comment_cells": {
+            "block": 0,
+            "line": 1574
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.06647399999928894,
+          "geometry": 0.0006966669989196816,
+          "compile": 0.026382084000942996,
+          "behavior": 0.46608829199976753
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "sum_to_n",
+      "shape": "cat",
+      "height_rows": 32,
+      "width_columns": 64,
+      "source_file": "case_sum_to_n_cat_h32.c",
+      "elapsed_s": 0.3766520829994988,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "cat",
+          "cols": 64,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 60,
+            "rows": 31,
+            "ratio": 0.967741935483871
+          },
+          "allowed_cells": 1316,
+          "spans_total": 50,
+          "rows_with_multiple_spans": 13,
+          "eye_cells": {
+            "left": 43,
+            "right": 43
+          },
+          "nose_cells": 10,
+          "ear_gap_rows": 5,
+          "holes": [
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 21.0
+              }
+            },
+            {
+              "cells": 43,
+              "centroid": {
+                "row": 15.13953488372093,
+                "col": 42.0
+              }
+            },
+            {
+              "cells": 10,
+              "centroid": {
+                "row": 20.4,
+                "col": 31.5
+              }
+            }
+          ],
+          "code_stroke_cells": 0,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.9962006079027356,
+          "token_coverage": 0.026595744680851064,
+          "comment_coverage": 0.9696048632218845,
+          "comment_cells": {
+            "block": 230,
+            "line": 1046
+          },
+          "ear_coverage": {
+            "ear_left": 0.9844961240310077,
+            "ear_right": 0.9767441860465116
+          }
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.05152062500019383,
+          "geometry": 0.0009126249988185009,
+          "compile": 0.028947208000317914,
+          "behavior": 0.13161045800006832
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    },
+    {
+      "fixture": "sum_to_n",
+      "shape": "code",
+      "height_rows": 32,
+      "width_columns": 178,
+      "source_file": "case_sum_to_n_code_h32.c",
+      "elapsed_s": 0.3262075000002369,
+      "issues": [],
+      "verification": {
+        "token_status": "PASS",
+        "geometry_status": "PASS",
+        "compile_status": "PASS",
+        "behavior_status": "PASS",
+        "geometry_metrics": {
+          "kind": "code",
+          "cols": 178,
+          "rows": 32,
+          "cell_aspect": 0.5,
+          "bbox": {
+            "cols": 178,
+            "rows": 32,
+            "ratio": 2.78125
+          },
+          "allowed_cells": 4154,
+          "spans_total": 172,
+          "rows_with_multiple_spans": 24,
+          "eye_cells": {
+            "left": 0,
+            "right": 0
+          },
+          "nose_cells": 0,
+          "ear_gap_rows": 0,
+          "holes": [
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 5.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 5.0,
+                "col": 67.0
+              }
+            },
+            {
+              "cells": 294,
+              "centroid": {
+                "row": 15.5,
+                "col": 102.0
+              }
+            },
+            {
+              "cells": 430,
+              "centroid": {
+                "row": 15.5,
+                "col": 148.25116279069766
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 10.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 8.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 53.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 81.0
+              }
+            },
+            {
+              "cells": 126,
+              "centroid": {
+                "row": 15.5,
+                "col": 124.0
+              }
+            },
+            {
+              "cells": 28,
+              "centroid": {
+                "row": 22.5,
+                "col": 39.0
+              }
+            },
+            {
+              "cells": 66,
+              "centroid": {
+                "row": 26.0,
+                "col": 24.5
+              }
+            },
+            {
+              "cells": 63,
+              "centroid": {
+                "row": 26.0,
+                "col": 67.0
+              }
+            }
+          ],
+          "code_stroke_cells": 1542,
+          "outside_canvas_cells": 0,
+          "outside_mask_cells": 0,
+          "out_of_bounds_cells": 0,
+          "hole_leakage_cells": 0,
+          "coverage": 0.999037072701011,
+          "token_coverage": 0.008425613866153106,
+          "comment_coverage": 0.990611458834858,
+          "comment_cells": {
+            "block": 2128,
+            "line": 1987
+          },
+          "ear_coverage": {}
+        },
+        "first_diff": null,
+        "diagnostics": [],
+        "skip_reasons": {},
+        "durations": {
+          "token": 0.05220016699968255,
+          "geometry": 0.002649125000971253,
+          "compile": 0.02688608300013584,
+          "behavior": 0.14467270899876894
+        },
+        "compiler": {
+          "path": "/usr/bin/clang",
+          "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+          "flags": [
+            "-std=c11",
+            "-pedantic-errors"
+          ],
+          "_fingerprint": [
+            16777231,
+            1152921500312612130,
+            200560,
+            1792710643000000000
+          ]
+        },
+        "behavior_cases_compared": 8
+      },
+      "generation_diagnostics": []
+    }
+  ]
+}

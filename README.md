@@ -91,6 +91,20 @@ matching behavior on the specified sample inputs. A skipped check is shown
 as `NOT_RUN` with a reason. Geometry failures keep the run from being shown
 as verified. Behavior is skipped for canvases above the configured cell limit.
 
+## Fixed-size acceptance
+
+E's public command archives the real six-function by three-shape matrix:
+
+```sh
+python -m scripts.run_verification --output-dir docs/reports/<run-id>/fixed
+```
+
+Use a new directory for each run. The report identifies the commit and
+worktree state, records 18 h32 outputs and counts actual behavior comparisons.
+Scaled-cat acceptance is reported separately. See
+[the verification guide](docs/modules/verify.md) and
+[the updated F integration evidence](docs/reports/F_after_E.md).
+
 ## Team integration and delivery
 
 [Shared contracts](docs/modules/contracts.md) define A–F entry points,
