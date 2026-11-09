@@ -392,3 +392,75 @@ def test_actual_scale_reflects_rounded_height():
     assert plan.mask.height == 33
     assert plan.actual_scale == pytest.approx(33 / 32)
     assert plan.attempt_history[0].scale == pytest.approx(33 / 32)
+
+
+# ------------------------------------------------- integration hardening (CODE / long tokens)
+
+
+def test_code_mask_packs_tokens_across_many_short_spans():
+    # The 178x32 CODE mask splits its rows into short 7-22 cell spans. The
+    # engine must flow tokens across these fragmented spans instead of raising
+    # a false LAYOUT_LIMIT.
+    token_count = 300
+    tokens = tuple(Token(i, "identifier", "v", 1, 1, 1) for i in range(token_count))
+    model = model_for(tokens)
+
+    plan = fit_layout(model, ShapeSpec("code"), LayoutOptions(),
+                      mask_builder=build_mask, join_checker=always_join, ctx=context())
+
+    assert plan.mask.width == 178
+    assert len(plan.placements) == token_count
+    # Placements genuinely span multiple rows (the fragmented CODE spans).
+    assert len({p.row for p in plan.placements}) > 1
+    # Every token sits on an allowed cell inside one of the row's spans.
+    for placement in plan.placements:
+        row, col = placement.row, placement.col
+        assert plan.mask.allowed[row][col]
+        assert any(start <= col < end for start, end in plan.mask.spans[row])
+
+
+def test_token_wider_than_base_spans_succeeds_after_growth():
+    # A width-12 token fits no span of the h=4 circle (max 8) nor h=5 (max 10);
+    # growth to h=7 produces a 14-cell span, so the engine must retry and succeed.
+    wide = Token(0, "identifier", "w" * 12, 12, 1, 1)
+    model = model_for((wide,))
+    options = LayoutOptions(base_height_rows=4, max_columns=800, max_rows=600)
+
+    plan = fit_layout(model, ShapeSpec("circle"), options,
+                      mask_builder=build_mask, join_checker=always_join, ctx=context())
+
+    assert plan.attempt_count == 3
+    assert len(plan.placements) == 1
+    row, col = plan.placements[0].row, plan.placements[0].col
+    # All 12 cells are allowed and contained within a single span.
+    assert all(plan.mask.allowed[row][col:col + 12])
+    assert any(start <= col and col + 12 <= end
+               for start, end in plan.mask.spans[row])
+    # The two failed attempts point at the wide token; the final record is success.
+    assert len(plan.attempt_history) == 3
+    assert all(record.failure_token_index == 0 for record in plan.attempt_history[:-1])
+    assert plan.attempt_history[-1].failure_token_index is None
+
+    # The grown plan still renders and passes the geometry contract.
+    rendered = render_source(model, plan, FillOptions(), ctx=context())
+    _, issues = check_geometry(model, plan, rendered, None, context())
+    assert not issues.reasons, issues.reasons
+
+
+def test_long_token_that_never_fits_raises_layout_limit_with_history():
+    # A token wider than the canvas can ever provide must fail with LAYOUT_LIMIT,
+    # and the diagnostic details expose the full attempt history.
+    wide = Token(0, "identifier", "w" * 700, 700, 1, 1)
+    model = model_for((wide,))
+    options = LayoutOptions(base_height_rows=4, max_attempts=12,
+                            max_columns=800, max_rows=600)
+
+    with pytest.raises(StageError) as exc_info:
+        fit_layout(model, ShapeSpec("circle"), options,
+                   mask_builder=build_mask, join_checker=always_join, ctx=context())
+
+    diagnostic = exc_info.value.diagnostic
+    assert diagnostic.code == ErrorCode.LAYOUT_LIMIT
+    history = diagnostic.details["attempt_history"]
+    assert len(history) >= 1
+    assert all(record.failure_token_index == 0 for record in history)
