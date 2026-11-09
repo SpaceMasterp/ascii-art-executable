@@ -1,0 +1,40 @@
+{
+  "verified": false,
+  "checks": {
+    "token": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "geometry": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "compile": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "behavior": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "message": "Only printable ASCII source is supported",
+      "line": 1,
+      "column": 20,
+      "details": {}
+    }
+  ],
+  "attempt_history": [],
+  "layout": null,
+  "coverage": null,
+  "source_text": null,
+  "verification": null,
+  "revision": {
+    "commit": "a6b3662f0f964064a8d2665b34fe1b0e102805e2",
+    "dirty": true
+  }
+}
