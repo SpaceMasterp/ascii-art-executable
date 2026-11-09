@@ -5,10 +5,43 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: "${{ github.event_name == 'pull_request' }}"
 jobs:
-  test:
+  unit:
+    name: Fast pure-Python checks (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install pytest
+        run: python -m pip install pytest==9.2.0
+      - name: Test pure-Python modules
+        run: >-
+          python -m pytest -q
+          tests/test_shapes.py
+          tests/test_shape_metrics.py
+          tests/test_procutil.py
+          tests/test_layout.py
+          tests/test_app.py
+          tests/test_pipeline.py
+          tests/test_verification_cli.py
+  full:
+    name: Full checks (macOS, clang + node)
     runs-on: macos-15
-    timeout-minutes: 10
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:

@@ -26,8 +26,9 @@ The shared process utilities are now public in `codeart.procutil`. Old
 imports continue through a compatibility module. Export names include
 height and realized scale; reports include commit and dirty state.
 
-CI is configured for macos-15 and logs compiler/environment versions.
-The collected test-count guard compares against the PR base.
+CI runs in two jobs: `unit` on ubuntu-latest covers the pure-Python tests,
+while `full` on macos-15 runs the complete suite and logs compiler and
+environment versions. The collected test-count guard compares against the PR base.
 
 Independent scaled-cat references remain a B/E handoff. E currently checks
 32, 64 and 128 rows; proposed 96-row data must be coordinated before use.
