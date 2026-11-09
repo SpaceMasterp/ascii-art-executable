@@ -4,25 +4,77 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+import json
+from math import sqrt
+from pathlib import Path
 from time import monotonic
 
-from ._verification_process import BuildSession, VerificationContext, WorkStopped, check_context
+from .procutil import BuildSession, WorkStopped, check_context
 from .shapes import FontMetrics, ShapeSpec, SizeRequest, build_mask, geometry_metrics
 from .verification_fixtures import BUILTIN_FIXTURES, FixtureSelection
-from .verify import CheckStatus, VerificationReport
+from .verify import CheckStatus, VerificationContext, VerificationReport
+
+
+_CAT_BASE_HEIGHT = 32
+_CAT_SCALES = (1, 2, 4)
+_CAT_HOLE_MIN_CELLS = (("eye_left", 4), ("eye_right", 4), ("nose", 2))
 
 
 @dataclass(frozen=True)
 class HoleReference:
     base_area: float
     center: tuple[float, float]
-    boundary_cells: int
+    boundary_cells: float
 
 
 @dataclass(frozen=True)
 class CatScaleReference:
     holes: Mapping[str, HoleReference]
     ear_gap_rows: int
+
+
+def _read_shape_metrics(directory: Path, height: int):
+    path = directory / f"metrics_h{height}.json"
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    if (document["schema_version"] != 1
+            or document["height_rows"] != height
+            or document["cell_aspect"] != FontMetrics().cell_aspect):
+        raise ValueError(f"Incompatible shape metrics: {path}")
+    return document
+
+
+def load_cat_references(directory: Path) -> dict[int, CatScaleReference]:
+    """Adapt B's h32/h64/h128 snapshots to E's scale and coordinate conventions."""
+    base = _read_shape_metrics(directory, _CAT_BASE_HEIGHT)
+    if base is None:
+        return {}
+    base_features = base["shapes"]["cat"]["features"]
+    tolerance = base["tolerance"]
+    references = {}
+    for scale in _CAT_SCALES:
+        document = base if scale == 1 else _read_shape_metrics(directory, _CAT_BASE_HEIGHT * scale)
+        if document is None:
+            continue
+        cat = document["shapes"]["cat"]
+        holes = {}
+        for name, _ in _CAT_HOLE_MIN_CELLS:
+            base_area = base_features[name]["cells"]
+            area_at_scale = base_area * scale ** 2
+            row, col = cat["features"][name]["centroid"]
+            holes[name] = HoleReference(
+                base_area=base_area,
+                center=(row - 0.5, col - 0.5),
+                boundary_cells=max(
+                    tolerance["area_rel"] * area_at_scale,
+                    tolerance["area_perimeter_factor"] * sqrt(area_at_scale),
+                    tolerance["area_min_cells"],
+                ),
+            )
+        references[scale] = CatScaleReference(holes, cat["ear_gap_rows"])
+    return references
 
 
 @dataclass(frozen=True)
@@ -91,14 +143,14 @@ def _case_issues(report, shape, min_coverage, min_ear_coverage):
 
 
 def _check_cat_scale(scale, reference, ctx):
-    mask = build_mask(ShapeSpec("cat"), SizeRequest(32 * scale), FontMetrics(), ctx=ctx)
+    mask = build_mask(ShapeSpec("cat"), SizeRequest(_CAT_BASE_HEIGHT * scale), FontMetrics(), ctx=ctx)
     metrics = geometry_metrics(mask)
     issues = []
     if len(metrics["holes"]) != 3:
         issues.append("HOLE_COUNT")
     if abs(metrics["ear_gap_rows"] - reference.ear_gap_rows) > 1:
         issues.append("EAR_GAP")
-    for name, minimum in (("eye_left", 4), ("eye_right", 4), ("nose", 2)):
+    for name, minimum in _CAT_HOLE_MIN_CELLS:
         check_context(ctx)
         cells = mask.features[name]
         expected = reference.holes.get(name)
@@ -138,7 +190,7 @@ def run_regression(
     interrupted = None
     cat_scales = {
         scale: CatScaleResult(CheckStatus.NOT_RUN, ("MISSING_REFERENCE",))
-        for scale in (1, 2, 4)
+        for scale in _CAT_SCALES
     }
     references = cat_references or {}
     with BuildSession() as builds:

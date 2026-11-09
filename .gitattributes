@@ -1,0 +1,2 @@
+# Generated source retains all canvas rows, including trailing empty rows.
+docs/reports/**/*.c whitespace=-blank-at-eof

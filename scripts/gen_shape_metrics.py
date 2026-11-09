@@ -4,7 +4,11 @@
 The fixtures under ``tests/fixtures/shapes/metrics_h<rows>.json`` are derived
 from the live mask implementation in :mod:`codeart.shapes`.  Nothing in the
 JSON is hand-written: every number comes from ``build_mask`` /
-``geometry_metrics`` for the three supported shapes at 32, 64 and 96 rows.
+``geometry_metrics`` for the three supported shapes at 32, 64, 96 and 128 rows.
+
+``h32``/``h64``/``h128`` are the heights of Part E's scaled cat acceptance set
+(``32 * scale`` for ``scale in (1, 2, 4)``); ``h96`` is kept alongside them for
+continuity, so nothing that referenced the older three-height set breaks.
 
 The output is deterministic: dict insertion order is fixed, floats are
 rounded to a documented number of decimals, and the file always ends with one
@@ -36,7 +40,9 @@ from codeart.shapes import (  # noqa: E402
     geometry_metrics,
 )
 
-HEIGHTS = (32, 64, 96)
+#: 32/64/128 are Part E's scaled cat acceptance heights (32 * scale for
+#: scale in (1, 2, 4)); 96 is retained for continuity with the older set.
+HEIGHTS = (32, 64, 96, 128)
 KINDS = ("circle", "cat", "code")
 #: Only the named hole features are part of the public reference schema.
 HOLE_FEATURES = ("eye_left", "eye_right", "nose")
