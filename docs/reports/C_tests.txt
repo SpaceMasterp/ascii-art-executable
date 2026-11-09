@@ -1,0 +1,31 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.16, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\allen\AppData\Roaming\LarkShell\sandbox_runtime\bases\772984f6fd3a8ae0ae7d2422cd7c2bfa\python\python.exe
+cachedir: .pytest_cache
+rootdir: D:\university\year1semA\python\project\c_Allen_C 后端与主力填充引擎\ascii-art-contracts
+collecting ... collected 23 items
+
+tests/test_layout.py::test_one_placement_per_token_on_each_shape[circle] PASSED [  4%]
+tests/test_layout.py::test_one_placement_per_token_on_each_shape[cat] PASSED [  8%]
+tests/test_layout.py::test_one_placement_per_token_on_each_shape[code] PASSED [ 13%]
+tests/test_layout.py::test_placements_stay_inside_mask_and_do_not_overlap PASSED [ 17%]
+tests/test_layout.py::test_placements_are_strictly_ordered PASSED        [ 21%]
+tests/test_layout.py::test_never_join_records_a_protected_blank_within_each_run PASSED [ 26%]
+tests/test_layout.py::test_always_join_keeps_tokens_adjacent_without_protected_blanks PASSED [ 30%]
+tests/test_layout.py::test_protected_blank_separates_two_adjacent_identifiers PASSED [ 34%]
+tests/test_layout.py::test_growth_retries_until_the_tokens_fit PASSED    [ 39%]
+tests/test_layout.py::test_exhausted_attempts_raise_layout_limit_with_history PASSED [ 43%]
+tests/test_layout.py::test_canvas_size_limit_raises_layout_limit PASSED  [ 47%]
+tests/test_layout.py::test_plan_renders_and_passes_geometry_check PASSED [ 52%]
+tests/test_layout.py::test_grown_plan_renders_and_passes_geometry_check PASSED [ 56%]
+tests/test_layout.py::test_cancellation_in_join_checker_stops_layout PASSED [ 60%]
+tests/test_layout.py::test_layout_stage_timeout_raises_layout_timeout PASSED [ 65%]
+tests/test_layout.py::test_layout_timeout_is_shared_across_retries PASSED [ 69%]
+tests/test_layout.py::test_mask_building_respects_layout_stage_budget PASSED [ 73%]
+tests/test_layout.py::test_elapsed_time_includes_token_packing PASSED    [ 78%]
+tests/test_layout.py::test_separator_resets_the_contiguous_run PASSED    [ 82%]
+tests/test_layout.py::test_actual_scale_reflects_rounded_height PASSED   [ 86%]
+tests/test_layout.py::test_code_mask_packs_tokens_across_many_short_spans PASSED [ 91%]
+tests/test_layout.py::test_token_wider_than_base_spans_succeeds_after_growth PASSED [ 95%]
+tests/test_layout.py::test_long_token_that_never_fits_raises_layout_limit_with_history PASSED [100%]
+
+============================= 23 passed in 0.26s ==============================

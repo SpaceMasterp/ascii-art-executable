@@ -1,0 +1,8 @@
+{
+  "python": "3.13.16",
+  "implementation": "CPython",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "machine": "AMD64",
+  "pytest": "9.2.0",
+  "libclang": "not available: No module named 'clang'"
+}
