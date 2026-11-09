@@ -80,7 +80,7 @@ Downloads include the realized height and scale in their names, for example
 worktree state. Keep fixed and grown evidence separate. A CLI report records
 the revision alongside check results and attempt history.
 
-The CI baseline uses macos-14, Python 3.12 and libclang 18.1.1.
+The CI baseline uses macos-15, Python 3.12 and libclang 18.1.1.
 It prints `clang --version` and records the complete environment. The test
 count guard compares collected counts against the PR base or previous main
 commit. A collection error fails the guard.

@@ -24,7 +24,7 @@ The shared process utilities are now public in `codeart.procutil`. Old
 imports continue through a compatibility module. Export names include
 height and realized scale; reports include commit and dirty state.
 
-CI is configured for macos-14 and logs compiler/environment versions.
+CI is configured for macos-15 and logs compiler/environment versions.
 The collected test-count guard compares against the PR base.
 
 Independent scaled-cat references remain a B/E handoff. E currently checks

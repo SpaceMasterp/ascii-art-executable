@@ -24,7 +24,7 @@ python -m pytest -q
 
 Production use only needs `requirements.txt`. Development dependencies add
 pytest. Record the output of `python -m codeart.environment` with any bug
-report. The CI baseline is macos-14, Python 3.12, the runner's Apple Clang, libclang
+report. The CI baseline is macos-15, Python 3.12, the runner's Apple Clang, libclang
 18.1.1 and pytest 9.2.0. Local validation also uses macOS, Python 3.14 and
 Apple Clang. The exact local versions are available in the environment report.
 
