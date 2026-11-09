@@ -1,0 +1,172 @@
+{
+  "verified": false,
+  "checks": {
+    "token": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "geometry": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "compile": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    },
+    "behavior": {
+      "status": "NOT_RUN",
+      "reason": "PIPELINE_STOPPED"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "LAYOUT_LIMIT",
+      "stage": "layout",
+      "message": "mask exceeds the configured canvas limits",
+      "line": null,
+      "column": null,
+      "details": {
+        "attempt_history": [
+          {
+            "scale": 1.0,
+            "width": 178,
+            "height": 32,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.04444733299988002
+          },
+          {
+            "scale": 1.25,
+            "width": 223,
+            "height": 40,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.0031653750002078596
+          },
+          {
+            "scale": 1.5625,
+            "width": 278,
+            "height": 50,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.004618791999746463
+          },
+          {
+            "scale": 1.96875,
+            "width": 350,
+            "height": 63,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.008177749999958905
+          },
+          {
+            "scale": 2.46875,
+            "width": 439,
+            "height": 79,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.012299375000111468
+          },
+          {
+            "scale": 3.0625,
+            "width": 545,
+            "height": 98,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.017546209000101953
+          },
+          {
+            "scale": 3.84375,
+            "width": 684,
+            "height": 123,
+            "failure_token_index": 8,
+            "reason": "no remaining span can hold the token",
+            "elapsed_s": 0.027772583000114537
+          },
+          {
+            "scale": 4.78125,
+            "width": 850,
+            "height": 153,
+            "failure_token_index": null,
+            "reason": "mask exceeds the configured canvas limits",
+            "elapsed_s": 0.04202637499929551
+          }
+        ]
+      }
+    }
+  ],
+  "attempt_history": [
+    {
+      "scale": 1.0,
+      "width": 178,
+      "height": 32,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.04444733299988002
+    },
+    {
+      "scale": 1.25,
+      "width": 223,
+      "height": 40,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.0031653750002078596
+    },
+    {
+      "scale": 1.5625,
+      "width": 278,
+      "height": 50,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.004618791999746463
+    },
+    {
+      "scale": 1.96875,
+      "width": 350,
+      "height": 63,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.008177749999958905
+    },
+    {
+      "scale": 2.46875,
+      "width": 439,
+      "height": 79,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.012299375000111468
+    },
+    {
+      "scale": 3.0625,
+      "width": 545,
+      "height": 98,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.017546209000101953
+    },
+    {
+      "scale": 3.84375,
+      "width": 684,
+      "height": 123,
+      "failure_token_index": 8,
+      "reason": "no remaining span can hold the token",
+      "elapsed_s": 0.027772583000114537
+    },
+    {
+      "scale": 4.78125,
+      "width": 850,
+      "height": 153,
+      "failure_token_index": null,
+      "reason": "mask exceeds the configured canvas limits",
+      "elapsed_s": 0.04202637499929551
+    }
+  ],
+  "layout": null,
+  "coverage": null,
+  "source_text": null,
+  "verification": null,
+  "revision": {
+    "commit": "a6b3662f0f964064a8d2665b34fe1b0e102805e2",
+    "dirty": true
+  }
+}

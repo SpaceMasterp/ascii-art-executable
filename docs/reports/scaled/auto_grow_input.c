@@ -1,0 +1,3 @@
+int auto_grow(void) {
+    return sizeof("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+}

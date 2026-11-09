@@ -1,0 +1,33 @@
+name: Python tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record compiler and environment
+        run: |
+          clang --version
+          python -m codeart.environment
+      - name: Check browser script
+        run: node --check codeart/web/app.js
+      - name: Check collected test count against base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python scripts/check_test_count.py
+      - name: Test
+        run: python -m pytest -q

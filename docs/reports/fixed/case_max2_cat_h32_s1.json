@@ -1,0 +1,141 @@
+{
+  "verified": true,
+  "checks": {
+    "token": {
+      "status": "PASS",
+      "reason": null
+    },
+    "geometry": {
+      "status": "PASS",
+      "reason": null
+    },
+    "compile": {
+      "status": "PASS",
+      "reason": null
+    },
+    "behavior": {
+      "status": "PASS",
+      "reason": null
+    }
+  },
+  "diagnostics": [],
+  "attempt_history": [
+    {
+      "scale": 1.0,
+      "width": 64,
+      "height": 32,
+      "failure_token_index": null,
+      "reason": null,
+      "elapsed_s": 0.05826812499981315
+    }
+  ],
+  "layout": {
+    "width": 64,
+    "height": 32,
+    "scale": 1.0,
+    "attempts": 1
+  },
+  "coverage": {
+    "total": 0.9977203647416414,
+    "token": 0.025835866261398176,
+    "comment": 0.9718844984802432,
+    "comment_cells": {
+      "block": 230,
+      "line": 1049
+    }
+  },
+  "source_text": "           int                                    //=\n          max2(                                  int a\n         ,int b)                                {return\n        a>b?a:b;}                             //========\n       /*========*/                          //==========\n      /*==========*/     /*==========*/     //============\n     //====================================================\n    //======================================================\n   //========================================================\n   //========================================================\n  //==========================================================\n      //==================================================\n    //======================================================\n   /*============*/     /*============*/     //==============\n   /*==========*/         /*========*/         //============\n  /*==========*/           /*======*/           //============\n  /*==========*/           /*======*/           //============\n  /*============*/       /*==========*/       //==============\n  //==========================================================\n  //==========================================================\n  /*=======================*/      //=========================\n   /*=======================*/    //=========================\n    //======================================================\n     //====================================================\n      //==================================================\n        //==============================================\n         //============================================\n            //======================================\n               //================================\n                   //========================\n                          //==========\n\n",
+  "verification": {
+    "token_status": "PASS",
+    "geometry_status": "PASS",
+    "compile_status": "PASS",
+    "behavior_status": "PASS",
+    "geometry_metrics": {
+      "kind": "cat",
+      "cols": 64,
+      "rows": 32,
+      "cell_aspect": 0.5,
+      "bbox": {
+        "cols": 60,
+        "rows": 31,
+        "ratio": 0.967741935483871
+      },
+      "allowed_cells": 1316,
+      "spans_total": 50,
+      "rows_with_multiple_spans": 13,
+      "eye_cells": {
+        "left": 43,
+        "right": 43
+      },
+      "nose_cells": 10,
+      "ear_gap_rows": 5,
+      "holes": [
+        {
+          "cells": 43,
+          "centroid": {
+            "row": 15.13953488372093,
+            "col": 21.0
+          }
+        },
+        {
+          "cells": 43,
+          "centroid": {
+            "row": 15.13953488372093,
+            "col": 42.0
+          }
+        },
+        {
+          "cells": 10,
+          "centroid": {
+            "row": 20.4,
+            "col": 31.5
+          }
+        }
+      ],
+      "code_stroke_cells": 0,
+      "outside_canvas_cells": 0,
+      "outside_mask_cells": 0,
+      "out_of_bounds_cells": 0,
+      "hole_leakage_cells": 0,
+      "coverage": 0.9977203647416414,
+      "token_coverage": 0.025835866261398176,
+      "comment_coverage": 0.9718844984802432,
+      "comment_cells": {
+        "block": 230,
+        "line": 1049
+      },
+      "ear_coverage": {
+        "ear_left": 0.9844961240310077,
+        "ear_right": 0.9922480620155039
+      }
+    },
+    "first_diff": null,
+    "diagnostics": [],
+    "skip_reasons": {},
+    "durations": {
+      "token": 0.042405875000440574,
+      "geometry": 0.0009395420001965249,
+      "compile": 0.03575075000026118,
+      "behavior": 0.6469189590006863
+    },
+    "compiler": {
+      "path": "/usr/bin/clang",
+      "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.2.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+      "flags": [
+        "-std=c11",
+        "-pedantic-errors"
+      ],
+      "_fingerprint": [
+        16777231,
+        1152921500312612130,
+        200560,
+        1792710643000000000
+      ]
+    },
+    "behavior_cases_compared": 8
+  },
+  "revision": {
+    "commit": "a6b3662f0f964064a8d2665b34fe1b0e102805e2",
+    "dirty": true
+  }
+}

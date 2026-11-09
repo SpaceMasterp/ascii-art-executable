@@ -1,0 +1,16 @@
+{
+  "python": "3.14.7",
+  "platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "libclang": "18.1.1",
+    "pytest": "9.2.0"
+  },
+  "compiler": "/usr/bin/clang",
+  "compiler_version": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
+  "font": "Roboto Mono Regular",
+  "cell_aspect": 0.5,
+  "revision": {
+    "commit": "42a61c78756f543dfd865ff8fc4ffa96474fcd67",
+    "dirty": false
+  }
+}
