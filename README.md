@@ -24,11 +24,13 @@ python -m pytest -q
 
 Production use only needs `requirements.txt`. Development dependencies add
 pytest. Record the output of `python -m codeart.environment` with any bug
-report. CI runs the pure-Python tests in a fast `unit` job on ubuntu-latest and
-everything else in a `full` job whose baseline is macos-15, Python 3.12, the
-runner's Apple Clang, libclang 18.1.1 and pytest 9.2.0. Local validation also
-uses macOS, Python 3.14 and Apple Clang. The exact local versions are available
-in the environment report.
+report. CI runs the pure-Python tests in a fast `unit` job on ubuntu-latest on
+every trigger, and everything else in a `full` job whose baseline is macos-15,
+Python 3.12, the runner's Apple Clang, libclang 18.1.1 and pytest 9.2.0. The
+`full` job runs on pushes to main, on `v*` tags and on pull requests labelled
+`full-ci`; see [continuous integration](#continuous-integration). Local
+validation also uses macOS, Python 3.14 and Apple Clang. The exact local
+versions are available in the environment report.
 
 ## Local web interface
 
@@ -128,8 +130,36 @@ Keep fixed and grown runs in separate `fixed/` and `scaled/` subdirectories.
 Each completion table identifies the tested commit and any uncommitted changes.
 Web and CLI reports include that revision information.
 
-A minimal GitHub Actions workflow runs for pushes to main and pull requests in
-two jobs: `unit` on ubuntu-latest runs the pure-Python test files (no libclang),
-and `full` on macOS runs the complete suite, logs compiler versions and rejects
-a decrease in collected test count relative to the base revision. PRs should include the actual test result and relevant environment
+### Continuous integration
+
+GitHub Actions runs two jobs. `Fast pure-Python checks (ubuntu)` uses
+ubuntu-latest with a five minute timeout and runs the pure-Python test files
+without libclang. `Full checks (macOS, clang + node)` uses macos-15, installs
+`requirements-dev.txt`, logs the compiler version and the environment report,
+checks the browser script with `node --check` and rejects a decrease in the
+collected test count relative to the base revision.
+
+macOS hosted capacity is the scarce resource, so the `full` job is gated. A
+pull request runs only the ubuntu fast checks by default, which finish in
+seconds; the macOS job is usually the one that waits minutes for an available
+runner, so it is queued only when it can report something the fast job cannot.
+Add the `full-ci` label to run it.
+
+| Event | ubuntu fast checks | macOS full checks |
+| --- | --- | --- |
+| Pull request opened, updated or reopened | yes | skipped |
+| Pull request labelled `full-ci` | yes | yes |
+| Push to `main` | yes | yes |
+| Push of a `v*` tag | yes | yes |
+| Manual `Run workflow` | yes | yes |
+
+Label a pull request when it changes the C analyzer, the Clang or libclang
+integration, the browser script or the collected test count. Removing the label
+cancels the pending macOS run and leaves the next trigger with the fast checks
+only; adding it back queues a fresh full run. Recent runs of the same ref are
+cancelled when a newer run starts. To run the full suite by hand, open the
+**Actions** tab, select the **Python tests** workflow and choose **Run
+workflow** on the branch to check.
+
+A PR should include the actual test result and relevant environment
 information. See [the F completion checklist](docs/reports/F_acceptance.md).
