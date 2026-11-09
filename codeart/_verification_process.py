@@ -6,9 +6,9 @@ from .procutil import (
     CommandTimedOut,
     CompilerInfo,
     DependencyUnavailable,
-    VerificationContext,
     WorkStopped,
     check_context,
     run_command,
-    _stop_process,
+    stop_process as _stop_process,
 )
+from .verify import VerificationContext

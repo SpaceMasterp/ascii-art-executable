@@ -105,6 +105,108 @@ holes: [{cells, centroid: {row, col}}],   # 只统计内部孔洞
 code_stroke_cells
 ```
 
+## 供验收使用的放大参考数据
+
+`tests/fixtures/shapes/metrics_h{32,64,96}.json` 是给 E 用的生成快照：每个文件覆盖
+`circle`、`cat` 与 `code`（`text="CODE"`）三种图案在同一高度下的几何数据。重新生成：
+
+```bash
+python scripts/gen_shape_metrics.py
+```
+
+脚本对每个「图案 × 高度」调用 `build_mask` + `geometry_metrics`，没有手填数字；输出确定
+（两次运行字节一致），`tests/test_shape_metrics.py` 会校验 fixture 与当前实现一致。
+
+顶层字段：
+
+| 字段 | 含义 |
+|---|---|
+| `schema_version` | `1` |
+| `cell_aspect` | `0.5`，项目固定的字符宽 / 字符高 |
+| `height_rows` | 本文件所有图案共用的行数 |
+| `generated_by` | 生成脚本路径 `scripts/gen_shape_metrics.py` |
+| `tolerance` | E 使用的容差（见下） |
+| `shapes` | `circle`、`cat`、`code` → 各图案的记录 |
+| `scaling_expectation` | 文字说明 + 缩放公式的参考高度（`32`） |
+
+单个图案的记录：
+
+| 字段 | 含义 |
+|---|---|
+| `cols`、`rows` | mask 尺寸（列数由图案物理宽高比决定） |
+| `bbox_ratio` | 占据的外接矩形比：`bbox_cols * cell_aspect / bbox_rows` |
+| `allowed_cells` | 可填格数 |
+| `spans_total` | 所有行上极大可填区间的总数 |
+| `rows_with_multiple_spans` | 被至少一个孔洞切成多段的行数 |
+| `features` | 只含命名的眼/鼻洞；`circle` 与 `code` 为 `{}` |
+| `hole_count` | 命名孔洞特征数：`cat` 为 `3`，其余为 `0` |
+| `ear_gap_rows` | 仅 `cat`：两个耳尖之间的凹陷行数；其余为 `null` |
+
+每个 feature：
+
+| 字段 | 含义 |
+|---|---|
+| `cells` | 该特征的格数（即下文的 `A_ref`） |
+| `bbox` | 闭区间 `[min_row, min_col, max_row, max_col]` |
+| `centroid` | `[row, col]`，采用**格中心**坐标（下标 + 0.5） |
+
+### 容差口径
+
+对 32 行下测得面积为 `A_ref` 的 feature：
+
+```
+A_expected(h) = A_ref * (h / 32) ** 2
+area_limit(h) = max(area_rel * A_expected(h),
+                    area_perimeter_factor * sqrt(A_expected(h)),
+                    area_min_cells)
+area_ok      = abs(cells(h) - A_expected(h)) <= area_limit(h)
+centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_abs_cells
+```
+
+面积项刻意做成**周长级**：参考格数是在格中心采样的，孔洞实测格数与理想连续面积之差，
+来自轮廓切过的那些格，误差与孔洞**周长**成正比；而面积为 `A` 的孔洞，周长约按 `sqrt(A)`
+增长，不是常数。所以任何固定的绝对格数都会两头不对：`20` 格让 32 行只有 10 格的鼻子
+允许了 300% 误差，而 96 行眼睛本身 16 格的量化漂移就已经吃掉这份预算的 80%，几乎没给
+真正的回归留下余量。
+
+以 32 行为参考实测（`area_perimeter_factor = 4.0`、`area_rel = 0.02`、
+`area_min_cells = 2`）：
+
+| feature | h | `A_ref` | `A_expected` | 实测 | `area_limit` | 结论 |
+|---|---|---|---|---|---|---|
+| 眼 | 32 | 43 | 43 | 43 | 26.2 | 通过（参考本身） |
+| 眼 | 64 | 43 | 172 | 163 | 52.5 | 通过（漂 9 格） |
+| 眼 | 96 | 43 | 387 | 371 | 78.7 | 通过（漂 16 格） |
+| 鼻 | 32 | 10 | 10 | 10 | 12.6 | 通过（参考本身） |
+| 鼻 | 64 | 10 | 40 | 34 | 25.3 | 通过（漂 6 格） |
+| 鼻 | 96 | 10 | 90 | 74 | 37.9 | 通过（漂 16 格） |
+
+系数 4.0 对应格中心采样下圆盘边界环的规模：边界格数大致是 `4 * sqrt(A)`。这样既能容纳
+实测漂移、留一点余量，又不会放过参考值错 50% 的实现。面积更大的特征由 2% 相对项主导；
+`area_min_cells = 2` 避免退化成 1 格的孔洞拿到零预算。`bbox_ratio` 无量纲，三档之间差异
+不得超过 `bbox_ratio_abs = 0.05`。
+
+`centroid` 刻意存成格中心坐标：原始下标带 `-0.5` 偏置，不随 `h` 缩放；`(row + 0.5)` 才会。
+`hole_count` 只数命名的眼/鼻孔洞，不等同于 `len(geometry_metrics()["holes"])`——后者在某些
+分辨率下会多出 1 格的量化空洞。
+
+### E 的断言示例
+
+```python
+doc = json.loads((FIXTURES / "metrics_h32.json").read_text())
+ref, tol = doc["shapes"]["cat"]["features"]["eye_left"], doc["tolerance"]
+expected = ref["cells"] * (96 / 32) ** 2
+limit = max(tol["area_rel"] * expected,
+            tol["area_perimeter_factor"] * expected ** 0.5,
+            tol["area_min_cells"])
+got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features["eye_left"])
+assert abs(got - expected) <= limit  # 371 vs 387，limit 78.7
+```
+
+`tests/test_shape_metrics.py` 还会检查三档 `features` 键集合一致、面积平方缩放、质心线性缩放、
+`bbox_ratio` 与高度无关，以及生成脚本的字节级幂等。另有两个反向测试守住另一边：把参考眼
+格数放大 1.5 倍必须被缩放一致性断言拒绝；h96 眼睛少 100 格必须超出 `area_limit`。
+
 ## 验收指标（32 行实测）
 
 | 指标 | 要求 | 实测 |
