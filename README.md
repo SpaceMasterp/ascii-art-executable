@@ -107,8 +107,10 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 
 Use a new directory for each run. The report identifies the commit and
 worktree state, records 18 h32 outputs and counts actual behavior comparisons.
-Scaled-cat acceptance is reported separately. See
-[the verification guide](docs/modules/verify.md) and
+The same run checks the cat mask against B's h32/h64/h128 reference files.
+`cat_scales` records each scale's result. `passed` combines the fixed matrix
+and all three scale checks. The exit code still reports the fixed matrix.
+See [the verification guide](docs/modules/verify.md) and
 [the updated F integration evidence](docs/reports/F_after_E.md).
 The [automatic growth demonstration](docs/reports/README.md#automatic-growth-demonstration)
 shows how to reproduce and inspect layout retries.
