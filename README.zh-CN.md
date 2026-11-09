@@ -35,10 +35,10 @@ python -m pytest -q
 
 ## 当前状态
 
-main 的 `4b8b5b8` 基线已在本地通过 216 项测试、18 份固定尺寸输出、
+main 的 `b38b92b` 基线已通过 284 项测试、18 份固定尺寸输出、
 144 次行为对照，以及猫头 1×、2×、4× 检查。后续提交以对应 CI 和带版本
-锚点的报告为准。#27 合并后，[main@ffe3b05 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42634697287)
-也已通过全部 216 项测试（21.60 秒）；这次 CI 未运行正式验收矩阵。
+锚点的报告为准。[main@b38b92b 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42638059173/job/129231395916)
+也已通过全部 284 项测试（21.70 秒）；这次 CI 未运行正式验收矩阵。
 
 | 项目 | 状态 | 说明 |
 | --- | --- | --- |

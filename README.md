@@ -38,10 +38,10 @@ versions are available in the environment report.
 
 ## Status
 
-The functional baseline at main `4b8b5b8` passed 216 tests locally, all 18
+The functional baseline at main `b38b92b` passed 284 tests, all 18
 fixed-size cases and 144 behavior comparisons, plus the cat checks at 1x,
-2x and 4x. After #27, [the Ubuntu full CI run on main@ffe3b05](https://github.com/nukofish/ascii-art-executable/actions/runs/42634697287)
-also passed all 216 tests (21.60s); that run did not execute production
+2x and 4x. [The Ubuntu full CI run on main@b38b92b](https://github.com/nukofish/ascii-art-executable/actions/runs/42638059173/job/129231395916)
+also passed all 284 tests (21.70s); that run did not execute production
 acceptance. Later commits have their own CI logs and versioned evidence.
 
 | Check or delivery | Status | Evidence or interpretation |
