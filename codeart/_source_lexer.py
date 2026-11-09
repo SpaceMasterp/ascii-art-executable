@@ -11,7 +11,7 @@ from threading import Lock, Thread
 from time import monotonic
 
 from .contracts import Diagnostic, ErrorCode, StageError
-from ._verification_process import _stop_process
+from .procutil import _stop_process
 
 
 class LexWorker:

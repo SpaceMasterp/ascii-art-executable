@@ -7,7 +7,7 @@ from itertools import zip_longest
 from time import monotonic
 
 from ._verification_geometry import check_geometry
-from ._verification_process import (
+from .procutil import (
     BuildFailed,
     BuildSession,
     CommandTimedOut,

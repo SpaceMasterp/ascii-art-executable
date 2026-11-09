@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from time import monotonic
 
-from ._verification_process import BuildSession, VerificationContext, WorkStopped, check_context
+from .procutil import BuildSession, VerificationContext, WorkStopped, check_context
 from .shapes import FontMetrics, ShapeSpec, SizeRequest, build_mask, geometry_metrics
 from .verification_fixtures import BUILTIN_FIXTURES, FixtureSelection
 from .verify import CheckStatus, VerificationReport

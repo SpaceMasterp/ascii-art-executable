@@ -1,59 +1,114 @@
-# ascii-art-executable
-A simple cli tool to reformat C/C++ code into executable ascii art.
+# Code Art Studio
 
-## F integration smoke demo
+Reformat one self-contained C11 function into a circle, a cat head or hollow
+CODE while preserving effective tokens. Python implements the pipeline,
+libclang checks source structure and lexical boundaries, and Clang compiles
+the output. Token, geometry, compile and behavior checks are reported separately.
 
-Run from the repository root with Python 3.10 or later. The smoke demo uses
-the standard library and the existing Part B mask generator.
+## Install
 
-For source analysis and the real pipeline, install the pinned Python
-dependencies and a C11 Clang compiler. The Python libclang package includes
-its native library. Development and regression checks also require pytest.
+Use Python 3.10 or later and a C11 Clang compiler. The pinned libclang Python
+package includes its native library. On macOS, install Apple's command-line
+developer tools if `clang --version` is unavailable. On Ubuntu 24.04, install
+`clang-18` and put `/usr/lib/llvm-18/bin` on PATH.
+
+From the repository root on macOS or Linux:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
-python -m codeart.cli --source example.c --shape cat --output generated.c
+python -m codeart.environment
+python -m pytest -q
 ```
 
-[Source analysis and supported inputs](docs/modules/source.md) describes the
-raw lexer, error handling and isolation.
+Production use only needs `requirements.txt`. Development dependencies add
+pytest. Record the output of `python -m codeart.environment` with any bug
+report. The CI baseline is macos-14, Python 3.12, the runner's Apple Clang, libclang
+18.1.1 and pytest 9.2.0. Local validation also uses macOS, Python 3.14 and
+Apple Clang. The exact local versions are available in the environment report.
+
+## Local web interface
 
 ```sh
-python3 -m codeart.cli --demo --shape circle --output /tmp/codeart-demo.c
-python3 -m pytest -q
+python -m codeart.app
 ```
 
-The CLI supports `circle`, `cat` and `code`. In demo mode a fixed function
-is placed into the real mask by smoke-test stubs for A/C/D/E. All four checks
-are reported as `NOT_RUN (DEMO_ONLY)`. The file exercises export and LF
-preservation. It is a smoke fixture for integration, with production layout,
-comment filling and verification supplied by the corresponding modules.
+Open **http://127.0.0.1:8765**. Use `--port 8766` if that port is occupied.
 
-## Integration interface
+1. Choose one of the six built-in functions, open a `.c` file, or paste a function.
+2. Select circle, cat or hollow CODE and an initial scale from 1 to 4.
+3. Generate and inspect the original source, artwork, actual grid size, scale,
+   attempts, coverage, elapsed time and four independent check results.
+4. Review diagnostics and layout history. Download the source or JSON report.
+5. Use Cancel while a generation is running. Completed results are retained.
 
-[Module contracts and handoff rules](docs/modules/contracts.md)
+The application binds to loopback and processes one generation at a time.
+Closing its terminal with Ctrl+C requests cancellation and shuts it down.
+It retains the latest five runs in memory. Downloads must be saved before
+those runs are evicted or the server is stopped.
 
-Import request and result types from `codeart.contracts` and call
-`codeart.pipeline.generate(request, deps=..., cancel_event=...)`. Omitting
-`deps` assembles `source`, `shapes`, `layout`, `fill` and `verify`. A checkout
-missing one of these modules reports `DEPENDENCY_UNAVAILABLE`. Existing B
-shape types are re-exported from the contract to keep one class per type.
+Preview uses bundled Roboto Mono Regular with cell height equal to two
+character widths, matching B's 0.5 aspect ratio. Space and LF characters are
+preserved and long lines scroll horizontally. Font provenance and its SIL
+Open Font License are documented in [the app module guide](docs/modules/app.md).
 
-- C gets the mask builder and join checker as keyword arguments. Pass the same
-  context to B and keep attempt history on the layout plan.
-- For A–E, call `ctx.check()` during work. For any external process, use the
-  smaller of its stage budget and `ctx.remaining_s()` and terminate the child
-  on cancellation or timeout. Use `StageError(Diagnostic(...))` for a diagnosed
-  stage failure. The pipeline preserves a plan or output once the stage returns.
-- Positions in placements and the render map use zero-based grid coordinates.
-  User-facing diagnostic and token locations use one-based source coordinates.
-- The production caller supplies the compiler/lexer profile shared by A and E.
-  Ordinary input passes `fixtures=None`. A built-in sample must pass the
-  selection object from E along with its matching source.
-- E uses the shared verification types. Its lexer callback receives a context
-  with the shared budget API and a deadline capped by the lexer stage.
+## Command line
 
-The local web interface, production profile and pinned font remain integration
-milestones after the CLI smoke test.
+Run and behavior-test an unchanged built-in sample:
+
+```sh
+python -m codeart.cli --sample max2 --shape cat --scale 1.5 \
+  --output max2_cat.c --report max2_cat.json
+```
+
+Compile and verify an ordinary function:
+
+```sh
+python -m codeart.cli --source example.c --shape circle --output generated.c
+```
+
+The sample choices are `max2`, `min2`, `clamp`, `absdiff`, `gcd` and
+`sum_to_n`. Each includes eight fixed behavior inputs. Ordinary source and
+edited samples have behavior `NOT_RUN` with reason `NO_FIXTURE`. A matching
+function name alone does not select an executable fixture.
+
+Exit status is nonzero for failed checks or pipeline diagnostics. A custom
+function can succeed with behavior `NOT_RUN` when token, geometry and compile
+checks pass. Output and diagnostics use stdout and stderr respectively.
+The earlier `--demo` option remains a fixed smoke fixture with simulated
+A/C/D/E stages and explicit `NOT_RUN` checks.
+
+## Supported input and verification
+
+Input is one self-contained C11 function using printable ASCII. Parameters,
+automatic locals and recursion are supported. External declarations,
+preprocessing dependencies, static locals, line splicing, trigraphs and real
+tabs inside tokens are rejected. See [source analysis](docs/modules/source.md).
+
+The verification evidence supports token preservation, C11 compilation and
+matching behavior on the specified sample inputs. A skipped check is shown
+as `NOT_RUN` with a reason. Geometry failures keep the run from being shown
+as verified. Behavior is skipped for canvases above the configured cell limit.
+
+## Team integration and delivery
+
+[Shared contracts](docs/modules/contracts.md) define A–F entry points,
+coordinates, error codes and injected dependencies. Call
+`codeart.pipeline.generate(request, deps=..., cancel_event=...)`.
+Production dependencies load automatically. Test doubles use the same signatures.
+
+Each module owner maintains normal and boundary tests and its English module
+guide. E owns the full regression evidence and independent scaled-cat
+references supplied by B. F owns the app, CLI, environment setup and run
+instructions. Formal reports should record inputs, command, expected result,
+actual result, evidence and status. Store agreed deliverables under
+`docs/reports/`, using `case_<function>_<shape>_h<rows>_s<scale>.c` for source artifacts.
+Keep fixed and grown runs in separate `fixed/` and `scaled/` subdirectories.
+Each completion table identifies the tested commit and any uncommitted changes.
+Web and CLI reports include that revision information.
+
+A minimal GitHub Actions workflow runs the complete suite on macOS for
+pushes to main and pull requests, logs compiler versions and rejects a
+decrease in collected test count relative to the base revision. PRs should include the actual test result and relevant environment
+information. See [the F completion checklist](docs/reports/F_acceptance.md).
