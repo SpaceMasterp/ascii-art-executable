@@ -107,12 +107,14 @@ code_stroke_cells
 
 ## 供验收使用的放大参考数据
 
-`tests/fixtures/shapes/metrics_h{32,64,96}.json` 是给 E 用的生成快照：每个文件覆盖
+`tests/fixtures/shapes/metrics_h{32,64,96,128}.json` 是给 E 用的生成快照：每个文件覆盖
 `circle`、`cat` 与 `code`（`text="CODE"`）三种图案在同一高度下的几何数据。重新生成：
 
 ```bash
 python scripts/gen_shape_metrics.py
 ```
+
+`h128` 是 E 验收高度集（h32/h64/h128）所用的高度；`h96` 为了保持连续性而保留。
 
 脚本对每个「图案 × 高度」调用 `build_mask` + `geometry_metrics`，没有手填数字；输出确定
 （两次运行字节一致），`tests/test_shape_metrics.py` 会校验 fixture 与当前实现一致。
@@ -183,7 +185,7 @@ centroid_ok  = abs(centroid(h)[axis] - centroid(32)[axis] * h / 32) <= centroid_
 
 系数 4.0 对应格中心采样下圆盘边界环的规模：边界格数大致是 `4 * sqrt(A)`。这样既能容纳
 实测漂移、留一点余量，又不会放过参考值错 50% 的实现。面积更大的特征由 2% 相对项主导；
-`area_min_cells = 2` 避免退化成 1 格的孔洞拿到零预算。`bbox_ratio` 无量纲，三档之间差异
+`area_min_cells = 2` 避免退化成 1 格的孔洞拿到零预算。`bbox_ratio` 无量纲，四档之间差异
 不得超过 `bbox_ratio_abs = 0.05`。
 
 `centroid` 刻意存成格中心坐标：原始下标带 `-0.5` 偏置，不随 `h` 缩放；`(row + 0.5)` 才会。
@@ -203,7 +205,7 @@ got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features[
 assert abs(got - expected) <= limit  # 371 vs 387，limit 78.7
 ```
 
-`tests/test_shape_metrics.py` 还会检查三档 `features` 键集合一致、面积平方缩放、质心线性缩放、
+`tests/test_shape_metrics.py` 还会检查各档 `features` 键集合一致、面积平方缩放、质心线性缩放、
 `bbox_ratio` 与高度无关，以及生成脚本的字节级幂等。另有两个反向测试守住另一边：把参考眼
 格数放大 1.5 倍必须被缩放一致性断言拒绝；h96 眼睛少 100 格必须超出 `area_limit`。
 

@@ -24,7 +24,7 @@ from codeart import (  # noqa: E402
 )
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "shapes"
-HEIGHTS = (32, 64, 96)
+HEIGHTS = (32, 64, 96, 128)
 KINDS = ("circle", "cat", "code")
 HOLE_FEATURES = ("eye_left", "eye_right", "nose")
 TOLERANCE_KEYS = {
@@ -143,7 +143,7 @@ def test_fixture_matches_current_implementation(kind, rows):
 @pytest.mark.parametrize("kind", KINDS)
 def test_feature_keys_are_identical_at_every_height(kind):
     keysets = [set(load(rows)["shapes"][kind]["features"]) for rows in HEIGHTS]
-    assert keysets[0] == keysets[1] == keysets[2]
+    assert all(keyset == keysets[0] for keyset in keysets), (kind, keysets)
     assert keysets[0] == (set(HOLE_FEATURES) if kind == "cat" else set())
 
 

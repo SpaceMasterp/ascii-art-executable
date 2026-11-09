@@ -121,13 +121,16 @@ code_stroke_cells
 
 ## Scaled reference data for verification
 
-`tests/fixtures/shapes/metrics_h{32,64,96}.json` are generated snapshots for
+`tests/fixtures/shapes/metrics_h{32,64,96,128}.json` are generated snapshots for
 Part E. Each file covers all three shapes at one height (`circle`, `cat`, and
 `code` with `text="CODE"`). Regenerate them with:
 
 ```bash
 python scripts/gen_shape_metrics.py
 ```
+
+`h128` is the height used by Part E's acceptance set (h32/h64/h128); `h96` is
+kept for continuity.
 
 The generator calls `build_mask` + `geometry_metrics` for every shape/height;
 no value is hand-written. It is deterministic — two runs produce byte-identical
@@ -206,7 +209,7 @@ which is roughly `4 * sqrt(A)` cells: it admits the observed drift with a modest
 margin while still rejecting a reference that is off by 50%. For large features
 the 2% relative term takes over; `area_min_cells = 2` keeps degenerate one-cell
 holes from having a zero budget. `bbox_ratio` is dimensionless and must not
-drift with height: the three files may differ by at most
+drift with height: the four files may differ by at most
 `bbox_ratio_abs = 0.05`.
 
 `centroid` is stored in cell-centre coordinates on purpose: raw cell indices
@@ -228,8 +231,8 @@ got = len(build_mask(ShapeSpec("cat"), SizeRequest(96), FontMetrics()).features[
 assert abs(got - expected) <= limit  # 371 vs 387, limit 78.7
 ```
 
-`tests/test_shape_metrics.py` additionally checks feature-key equality at all
-three heights, quadratic area scaling, linear centroid scaling, the
+`tests/test_shape_metrics.py` additionally checks feature-key equality at every
+height, quadratic area scaling, linear centroid scaling, the
 height-invariant `bbox_ratio`, and byte-for-byte generator idempotence. Two
 negative controls guard the contract from the other side: a reference eye
 inflated by 1.5x must fail the scaling invariant, and the h96 eye losing 100
