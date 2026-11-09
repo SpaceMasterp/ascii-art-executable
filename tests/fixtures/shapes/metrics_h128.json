@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "cell_aspect": 0.5,
+  "height_rows": 128,
+  "generated_by": "scripts/gen_shape_metrics.py",
+  "tolerance": {
+    "bbox_ratio_abs": 0.05,
+    "area_rel": 0.02,
+    "area_perimeter_factor": 4.0,
+    "area_min_cells": 2,
+    "centroid_abs_cells": 1.0
+  },
+  "shapes": {
+    "circle": {
+      "cols": 256,
+      "rows": 128,
+      "bbox_ratio": 1.0,
+      "allowed_cells": 25760,
+      "spans_total": 128,
+      "rows_with_multiple_spans": 0,
+      "features": {},
+      "hole_count": 0,
+      "ear_gap_rows": null
+    },
+    "cat": {
+      "cols": 256,
+      "rows": 128,
+      "bbox_ratio": 1.01626,
+      "allowed_cells": 21138,
+      "spans_total": 203,
+      "rows_with_multiple_spans": 54,
+      "features": {
+        "eye_left": {
+          "cells": 658,
+          "bbox": [
+            53,
+            64,
+            71,
+            107
+          ],
+          "centroid": [
+            62.691,
+            85.716
+          ]
+        },
+        "eye_right": {
+          "cells": 658,
+          "bbox": [
+            53,
+            148,
+            71,
+            191
+          ],
+          "centroid": [
+            62.691,
+            170.284
+          ]
+        },
+        "nose": {
+          "cells": 138,
+          "bbox": [
+            79,
+            117,
+            86,
+            138
+          ],
+          "centroid": [
+            83.21,
+            128.0
+          ]
+        }
+      },
+      "hole_count": 3,
+      "ear_gap_rows": 20
+    },
+    "code": {
+      "cols": 712,
+      "rows": 128,
+      "bbox_ratio": 2.78125,
+      "allowed_cells": 64592,
+      "spans_total": 702,
+      "rows_with_multiple_spans": 100,
+      "features": {},
+      "hole_count": 0,
+      "ear_gap_rows": null
+    }
+  },
+  "scaling_expectation": {
+    "note": "面积按 (h/32)^2 缩放；位置按 h/32 缩放；bbox_ratio 与 h 无关",
+    "area_scale_ref_height": 32
+  }
+}
