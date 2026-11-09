@@ -1,0 +1,82 @@
+Part B completion checks (read-only)
+repo: /private/tmp/bchk
+code commit under test (origin/main): 4b8b5b8b29e761e5e808b5dfc69acb4b4d004f94
+branch: part-b-checklist
+uncommitted changes outside docs/reports/: no
+git status --porcelain at run time:
+   M docs/reports/b_shapes/B_checks.py
+   M docs/reports/b_shapes/B_checks.txt
+   M docs/reports/b_shapes/B_tests.txt
+   M docs/reports/b_shapes/run_b_evidence.sh
+python: 3.13.5 (/private/tmp/bchkvenv/bin/python)
+platform: macOS-27.0.1-arm64-arm-64bit-Mach-O / arm64
+cell_aspect: 0.5
+libclang required for B: no
+
+== a) build_mask: three shapes at h32 ================================
+shape    cols  rows  allowed  spans  multi-span rows  inner_radius
+circle     64    32     1612     32                0          None
+cat        64    32     1316     50               13          None
+code      178    32     4154    172               24          None
+
+== b) spans rebuild == allowed (exact, cell by cell) =================
+circle  h32   spans_total=32    cells=1612   identical=True
+circle  h64   spans_total=64    cells=6440   identical=True
+cat     h32   spans_total=50    cells=1316   identical=True
+cat     h64   spans_total=99    cells=5284   identical=True
+code    h32   spans_total=172   cells=4154   identical=True
+code    h64   spans_total=350   cells=16224  identical=True
+spans are sorted, disjoint and in-bounds for every row at both heights
+
+== c) cat holes (cells) and ear gap (rows) ===========================
+height  eye_left  eye_right  nose  ear_gap_rows  holes
+    32        43         43    10             5      3
+    64       163        163    34            10      3
+    96       371        371    74            15      5
+   128       658        658   138            20      3
+thresholds: eye >= 4, nose >= 2, ear_gap_rows >= 2, named holes = 3
+
+== d) circle physical bounding-box ratio vs 1.0 (tolerance 0.05) =====
+h32   ratio=1.000000 abs_error=0.000000 pass=True
+h64   ratio=1.000000 abs_error=0.000000 pass=True
+h96   ratio=1.000000 abs_error=0.000000 pass=True
+h128  ratio=1.000000 abs_error=0.000000 pass=True
+
+== e) determinism: two identical requests ============================
+circle  mask_equal=True metrics_equal=True spans_hash=df727ccf5ee5a158
+cat     mask_equal=True metrics_equal=True spans_hash=aa510eb5e769880f
+code    mask_equal=True metrics_equal=True spans_hash=d122796e07b9a738
+
+== f) rejected inputs (error code) ===================================
+inner_radius=0.5       -> ShapeError code=INVALID_SHAPE
+code text='HELLO'      -> ShapeError code=INVALID_SHAPE
+height_rows=0          -> ShapeError code=INVALID_SIZE
+height_rows=-5         -> ShapeError code=INVALID_SIZE
+
+== g) fixtures == current implementation =============================
+h32   bytes=1843   sha256=7f301e8d0753c843fdc43a2ba42cb2bdc6698af4f5df6b3f730af02f2ecacb80 identical=True
+h64   bytes=1857   sha256=eb1fb2434ccad929bfdc0dd304d889290c69834c7690fe3b96c19d1c22f4cc2d identical=True
+h96   bytes=1861   sha256=679b1fe07a159c8cacebb7fc2f62bf6ab2bee703c24c113182ec0d24dcb4c081 identical=True
+h128  bytes=1872   sha256=b31df543643a2be67008fa88fd0f5cb4f3ee1017141c3d25c9fffb4f4577b946 identical=True
+
+== h) scaling: cat eye area vs A32*(h/32)^2 ==========================
+h64   eye_left  actual=163   expected=172.0   delta=-9 limit=52.5 pass=True
+h64   nose      actual=34    expected=40.0    delta=-6 limit=25.3 pass=True
+h96   eye_left  actual=371   expected=387.0   delta=-16 limit=78.7 pass=True
+h96   nose      actual=74    expected=90.0    delta=-16 limit=37.9 pass=True
+h128  eye_left  actual=658   expected=688.0   delta=-30 limit=104.9 pass=True
+h128  nose      actual=138   expected=160.0   delta=-22 limit=50.6 pass=True
+
+== h) scaling: cat centroid vs c32*h/32 (tolerance 1.0 cell) =========
+h64   eye_left  centroid=[31.408, 42.862] expected=[31.28, 43.0] delta=[0.128, -0.138] pass=True
+h64   nose      centroid=[41.618, 64.0] expected=[41.8, 64.0] delta=[-0.182, 0.0] pass=True
+h96   eye_left  centroid=[47.018, 64.395] expected=[46.92, 64.5] delta=[0.098, -0.105] pass=True
+h96   nose      centroid=[62.5, 96.0] expected=[62.7, 96.0] delta=[-0.2, 0.0] pass=True
+h128  eye_left  centroid=[62.691, 85.716] expected=[62.56, 86.0] delta=[0.131, -0.284] pass=True
+h128  nose      centroid=[83.21, 128.0] expected=[83.6, 128.0] delta=[-0.39, 0.0] pass=True
+
+== h) bbox_ratio spread over h32/h64/h96/h128 (tolerance 0.05) =======
+circle  ratios=[1.0, 1.0, 1.0, 1.0] spread=0.000000 pass=True
+cat     ratios=[0.967742, 1.016393, 1.01087, 1.01626] spread=0.048651 pass=True
+code    ratios=[2.78125, 2.78125, 2.78125, 2.78125] spread=0.000000 pass=True
+

@@ -1,0 +1,44 @@
+{
+  "part": "B",
+  "report": "docs/reports/B_shapes.md",
+  "tested_commit": "4b8b5b8b29e761e5e808b5dfc69acb4b4d004f94",
+  "branch": "part-b-checklist",
+  "uncommitted_changes": true,
+  "uncommitted_scope": "none outside docs/reports/; only the evidence files added by this PR are untracked/modified, no source or test file is touched",
+  "python_version": "3.13.5",
+  "python_executable": "/private/tmp/bchkvenv/bin/python",
+  "python_implementation": "CPython",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "platform_system": "Darwin",
+  "platform_machine": "arm64",
+  "pytest_version": "pytest 9.2.0",
+  "cell_aspect": 0.5,
+  "shape_kinds": [
+    "circle",
+    "cat",
+    "code"
+  ],
+  "fixture_files": [
+    "metrics_h128.json",
+    "metrics_h32.json",
+    "metrics_h64.json",
+    "metrics_h96.json"
+  ],
+  "fixture_heights": [
+    32,
+    64,
+    96,
+    128
+  ],
+  "libclang_required": false,
+  "libclang_note": "Part B is pure Python (codeart.shapes). Only Part E's builtin compile path needs libclang; no clang is invoked by these commands.",
+  "commands": {
+    "tests": "python -m pytest tests/test_shapes.py tests/test_shape_metrics.py -q",
+    "generator": "python scripts/gen_shape_metrics.py (run twice)",
+    "checks": "python docs/reports/b_shapes/B_checks.py"
+  },
+  "evidence": {
+    "tests": "docs/reports/b_shapes/B_tests.txt",
+    "checks": "docs/reports/b_shapes/B_checks.txt"
+  }
+}
