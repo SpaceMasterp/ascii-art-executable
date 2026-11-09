@@ -9,8 +9,8 @@ tested PR merge commit `9ea8a2e32e97abc9f464e109032f186ed8310b53`.
 The acceptance artifact records this exact commit and `checkout_dirty=false`.
 
 The runner used Ubuntu 24.04, Python 3.12, Clang 18.1.3, libclang 18.1.1 and
-pytest 9.2.0. No application or pipeline interface changed. The branch also
-includes B's newly merged completion sheet.
+pytest 9.2.0. No application or pipeline interface changed. At that time, the branch also
+included B's newly merged completion sheet (already on main after this rebase).
 
 | Commit | Input | Command or action | Expected | Actual | Evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- |

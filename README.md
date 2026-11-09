@@ -40,7 +40,9 @@ versions are available in the environment report.
 
 The functional baseline at main `4b8b5b8` passed 216 tests locally, all 18
 fixed-size cases and 144 behavior comparisons, plus the cat checks at 1x,
-2x and 4x. Later commits have their own CI logs and versioned evidence.
+2x and 4x. After #27, [the Ubuntu full CI run on main@ffe3b05](https://github.com/nukofish/ascii-art-executable/actions/runs/42634697287)
+also passed all 216 tests (21.60s); that run did not execute production
+acceptance. Later commits have their own CI logs and versioned evidence.
 
 | Check or delivery | Status | Evidence or interpretation |
 | --- | --- | --- |
@@ -220,7 +222,7 @@ interpreter used to launch the app:
 
 ```sh
 python -m pip install -r requirements-dev.txt
-python -m pip show libclang clang
+python -m pip show libclang
 python -c "import clang.cindex; clang.cindex.Index.create(); print('libclang loaded')"
 ```
 
