@@ -1,0 +1,8 @@
+# Command: python -m pytest -q tests/test_source.py tests/test_source_lexer.py tests/test_source_boundaries.py tests/test_module_boundaries.py
+# Base: main 5628b4ee15c47b9eec943fc3398cbf10dff227f9 (rebased branch head)
+# Python: Python 3.12.14
+# Compiler: clang version 19.1.7 (https://github.com/ziglang/zig-bootstrap de1b01a8c1dddf75a560123ac1c2ab182b4830da)
+
+........................................................................ [ 59%]
+.................................................                        [100%]
+121 passed in 23.96s

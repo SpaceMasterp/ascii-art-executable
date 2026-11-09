@@ -1,0 +1,19 @@
+{
+  "python": "3.12.14",
+  "platform": "macOS-26.7.1-arm64-arm-64bit",
+  "packages": {
+    "libclang": "18.1.1",
+    "pytest": "9.2.0"
+  },
+  "compiler": "tools/bin/clang",
+  "compiler_version": "clang version 19.1.7 (https://github.com/ziglang/zig-bootstrap de1b01a8c1dddf75a560123ac1c2ab182b4830da)",
+  "font": "Roboto Mono Regular",
+  "cell_aspect": 0.5,
+  "revision": {
+    "commit": null,
+    "dirty": null
+  },
+  "base_commit": "5628b4ee15c47b9eec943fc3398cbf10dff227f9",
+  "compiler_note": "workspace-local wrapper around the clang driver shipped with zig 0.14.1; CI uses the Ubuntu clang package",
+  "note": "The checkout is a source archive without a .git directory, so revision_info() returns null; the base commit is recorded explicitly above."
+}

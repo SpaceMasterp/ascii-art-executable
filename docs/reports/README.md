@@ -12,6 +12,7 @@ Do not overwrite an earlier run when the source or revision differs.
 ## Report index
 
 - [Current status and reproduction commands](../../README.md#status)
+- [Part A source and lexical checks](A_source.md)
 - [Part B shape checks](B_shapes.md)
 - [Part C layout checks](C_layout.md)
 - [Part D completion checklist](D_checklist.md)
@@ -26,6 +27,9 @@ second-round completion sheet. Each owner adds their own sheet to this index.
 
 ## Handoffs
 
+- A owns input limits, lexical boundaries and diagnostic locations, and guards the
+  shared process boundary in `codeart.procutil`. The sheet is
+  [A_source.md](A_source.md), with evidence under [`a_source/`](a_source/).
 - B supplies geometry reference JSON and assertion definitions. E's acceptance
   command loads the h32, h64 and h128 fixtures for scales 1, 2 and 4. B keeps
   h96 as a scale-3 regression fixture. The B checklist, the measured numbers

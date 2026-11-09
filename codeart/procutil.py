@@ -1,4 +1,17 @@
-"""Shared subprocess and temporary build utilities for A and E."""
+"""Shared subprocess and temporary-build utilities for Parts A and E.
+
+This module is the public process boundary between the two owners. Part A
+(`codeart.source`, `codeart._source_lexer`) uses `run_command`, `BuildSession`,
+`stop_process` and the stop exceptions. Part E (`codeart.verify`,
+`codeart.verification_regression`) uses the same names plus `check_context`.
+Neither owner imports the other's private modules: the former
+`codeart._verification_process` path is a compatibility shim only.
+
+Every helper takes the caller's `RunContext`-compatible object, so one
+monotonic deadline and one cancellation event govern both stages. Children
+start in their own session on POSIX; the caller that owns the child reaps it
+after `stop_process`.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +25,11 @@ from tempfile import TemporaryDirectory, mkdtemp
 from time import monotonic
 
 from .contracts import CompilerInfo
+
+__all__ = (
+    "BuildFailed", "BuildSession", "CommandTimedOut", "DependencyUnavailable",
+    "WorkStopped", "check_context", "run_command", "stop_process",
+)
 
 
 class WorkStopped(Exception):
@@ -37,8 +55,10 @@ def check_context(ctx) -> None:
         raise WorkStopped("PIPELINE_TIMEOUT")
 
 
-def stop_process(proc: subprocess.Popen) -> None:
+def stop_process(proc: subprocess.Popen | None) -> None:
     """Kill a child started in its own session. The caller reaps it."""
+    if proc is None or proc.pid is None:
+        return
     try:
         if os.name == "posix":
             os.killpg(proc.pid, signal.SIGKILL)
@@ -49,6 +69,14 @@ def stop_process(proc: subprocess.Popen) -> None:
 
 
 def run_command(args, *, cwd: Path, env, ctx, timeout: float):
+    """Run one child under the caller's budget and return its captured output.
+
+    The effective limit is the smaller of the stage `timeout` and the time left
+    on `ctx`. Starting a missing program raises `DependencyUnavailable`; a
+    cancelled or expired shared context raises `WorkStopped`; an exhausted
+    stage budget raises `CommandTimedOut`. In every non-zero exit case the
+    child's process group is killed before the exception leaves this function.
+    """
     check_context(ctx)
     deadline = monotonic() + timeout
     try:
@@ -112,6 +140,7 @@ class BuildSession:
         self._directory.cleanup()
 
     def compiler_info(self, profile, ctx) -> CompilerInfo:
+        """Resolve, version and fingerprint the compiler once per session."""
         check_context(ctx)
         path = shutil.which(profile.compiler, path=self.env.get("PATH"))
         if path is None:

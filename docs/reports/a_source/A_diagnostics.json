@@ -1,0 +1,130 @@
+{
+  "revision": {
+    "commit": null,
+    "dirty": null
+  },
+  "cases": [
+    {
+      "name": "valid_function",
+      "note": "A self-contained function is accepted; no main is required.",
+      "input": "int f(int x){int y=x*2;return y+1;}",
+      "expected": null,
+      "actual": null,
+      "stage": "analysis",
+      "line": null,
+      "column": null,
+      "function_name": "f",
+      "token_count": 20,
+      "passed": true
+    },
+    {
+      "name": "non_ascii",
+      "note": "Non-ASCII identifier reports its original line and column.",
+      "input": "int f(void) {\n  return 变量;\n}",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 2,
+      "column": 10,
+      "message": "Only printable ASCII source is supported",
+      "passed": true
+    },
+    {
+      "name": "line_macro",
+      "note": "__LINE__ is rejected without any preprocessing directive.",
+      "input": "int f(void){return __LINE__;}",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 20,
+      "message": "Predefined macro use is unsupported: __LINE__",
+      "passed": true
+    },
+    {
+      "name": "file_macro",
+      "note": "The predefined macro table also covers __FILE__ and __COUNTER__.",
+      "input": "int f(void){ return __FILE__[0] + __COUNTER__; }",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 21,
+      "message": "Predefined macro use is unsupported: __FILE__",
+      "passed": true
+    },
+    {
+      "name": "compiler_extension",
+      "note": "GNU extensions are outside the frozen input scope.",
+      "input": "int f(void){ __asm__(\"nop\"); return 0; }",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 14,
+      "message": "Compiler extensions are unsupported: __asm__",
+      "passed": true
+    },
+    {
+      "name": "trigraph",
+      "note": "Trigraphs change the token stream during translation phase 1.",
+      "input": "int f(void){ return 1 ??= 2; }",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 23,
+      "message": "Trigraphs are unsupported",
+      "passed": true
+    },
+    {
+      "name": "line_splice",
+      "note": "A backslash-newline is a phase 2 transformation.",
+      "input": "int f(void){ ret\\\nurn 0; }",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 17,
+      "message": "Line splicing is unsupported",
+      "passed": true
+    },
+    {
+      "name": "external_call",
+      "note": "A call to an undeclared function is an external dependency.",
+      "input": "int f(int x){return g(x);}",
+      "expected": "UNSUPPORTED_SOURCE",
+      "actual": "UNSUPPORTED_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 21,
+      "message": "Reference to an external declaration: g",
+      "passed": true
+    },
+    {
+      "name": "invalid_syntax",
+      "note": "A parse error is reported as INVALID_SOURCE with a location.",
+      "input": "int f(void) { return ;;; @ }",
+      "expected": "INVALID_SOURCE",
+      "actual": "INVALID_SOURCE",
+      "stage": "analysis",
+      "line": 1,
+      "column": 15,
+      "message": "non-void function 'f' should return a value",
+      "passed": true
+    },
+    {
+      "name": "missing_compiler",
+      "note": "A missing compiler keeps the run diagnosed, not silently accepted.",
+      "input": "int f(int x){int y=x*2;return y+1;}",
+      "expected": "DEPENDENCY_UNAVAILABLE",
+      "actual": "DEPENDENCY_UNAVAILABLE",
+      "stage": "analysis",
+      "line": null,
+      "column": null,
+      "message": "Compiler not found: codeart-missing-compiler",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

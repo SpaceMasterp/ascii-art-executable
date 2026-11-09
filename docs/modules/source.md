@@ -1,49 +1,144 @@
-# Source analysis and lexical boundaries
+# Source analysis and lexical boundaries (Part A)
 
-Part A accepts one self-contained C11 function using printable ASCII source.
-Parameters, automatic local declarations and recursive calls are supported.
-Static local variables, including static const variables, are rejected because
-they retain storage across calls. This keeps the supported input scope free
-of persistent local state. External
-functions and objects, top-level declarations, preprocessing directives,
-predefined macros, trigraphs, line splicing and real tabs inside tokens
-produce shared diagnostics. Non-ASCII comments are also rejected. Escaped
-spellings such as `"a\tb"` are preserved.
+Part A turns user text into the single artifact the rest of the pipeline trusts:
+a `SourceModel` with the original text, its LF-normalized copy, the ordered raw
+token stream, the original comments and the function signature. It also owns the
+`can_join` decision that lets the layout stage place two tokens next to each
+other without a separator. Nothing here chooses a shape, a size or a comment.
 
-Import the public types from `codeart.contracts`. Call
-`analyze_source(text, profile, *, ctx)` to obtain a `SourceModel`.
-The default `VerificationProfile` uses `-std=c11 -pedantic-errors`.
-A binds a raw lexer callback to the returned model's profile when needed.
-F forwards that effective profile to E, which compares token kinds and
-spellings using the same libclang interface.
+## Public interface
 
-Input text is retained in `original_source`. CRLF and lone CR are normalized
-to LF in `normalized_source`. A virtual final LF is added for parsing and
-object compilation when absent. Token positions remain one-based and raw
-token spellings come from original source ranges. Comments are returned
-separately as shared `Token` values.
+| Name | Signature | Purpose |
+| --- | --- | --- |
+| `analyze_source` | `(text, profile=None, *, ctx=None) -> SourceModel` | Validate one self-contained C11 function; raise `StageError` with a shared `Diagnostic` on failure. |
+| `can_join` | `(run_tokens, next_token, profile=None) -> bool` | Re-lex the whole contiguous run plus the candidate and compare kinds and spellings. |
+| `lex_source` | `(text, *, ctx) -> tuple[LexedToken, ...]` | Raw token adapter E reuses for the generated source. |
+| `prepare_profile` | `(profile) -> VerificationProfile` | Bind A's lexer to the profile so E compares with the same lexer. |
 
-The native parser runs in an isolated Python child using the pinned libclang
-package. F's existing process runner terminates and reaps the child or process
-group on cancellation or timeout. Parsing and original-source object
-compilation share one analysis budget, capped by the pipeline deadline.
-The same raw lexer is exposed as `lex_source(text, *, ctx)` for E. Ordinary
-input has no behavior fixture and E records `NO_FIXTURE`.
+`codeart.source.__all__` contains exactly these four names. Import shared types
+from `codeart.contracts`; never import `codeart._source_lexer` or
+`codeart._source_worker` from another owner's module.
 
-`can_join(run_tokens, next_token, profile)` re-lexes the entire contiguous
-token run. It compares both token kind and raw spelling and caches completed
-decisions by tokens, compiler flags and lexer timeout. Cache misses share
-one serialized child process and reuse its libclang index. Requests have
-bounded wait and execution times. A hung or failed child is terminated and
-reaped; a subsequent request can start a fresh child. The worker is closed
-when the parent exits. C checks its context before and after join decisions
-as part of its token loop.
+## Input limits
 
-Install the pinned dependencies from `requirements.txt` and make a C11
-Clang compiler available on PATH. For tests, install `requirements-dev.txt`
-and run `python -m pytest -q`. The source tests include the complete six
-function by three shape pipeline matrix and 144 behavior comparisons.
+One function definition, no `main`, no top-level declarations, no other
+functions. Parameters, automatic locals, `goto` labels and recursion are inside
+the supported scope. Each rejection uses a shared `ErrorCode` and, when the
+position is known, a one-based line and column.
 
-Diagnostic codes and structured locations are the interface for callers and
-tests. Human-readable messages can differ between AST and compiler paths.
-External calls and undeclared objects both use `UNSUPPORTED_SOURCE`.
+| Input | Result | Location |
+| --- | --- | --- |
+| Printable ASCII `0x20`–`0x7E`, LF, CRLF, lone CR, tab outside tokens | accepted | – |
+| Non-ASCII character or control character (`0x00`–`0x1F`, `0x7F`) | `UNSUPPORTED_SOURCE` | original line and column of the character |
+| Real tab inside a token | `UNSUPPORTED_SOURCE` | token start |
+| Backslash-newline (line splice) | `UNSUPPORTED_SOURCE` | the backslash |
+| Trigraph (`??=` …) | `UNSUPPORTED_SOURCE` | the `?` |
+| Preprocessing directive (`#`, `%:`) | `UNSUPPORTED_SOURCE` | the directive token |
+| Predefined macro name from the table (`__LINE__`, `__FILE__`, `__COUNTER__`, …) | `UNSUPPORTED_SOURCE` | the identifier |
+| Any other implementation macro (`__INT_MAX__`, `__BYTE_ORDER__`, …) | `UNSUPPORTED_SOURCE` | the macro instantiation |
+| Function-name builtin (`__func__`, `__FUNCTION__`, `__PRETTY_FUNCTION__`) | `UNSUPPORTED_SOURCE` | the identifier |
+| GNU extension keyword (`__asm__`, `__attribute__`, `__extension__`, `__int128`, …) | `UNSUPPORTED_SOURCE` | the keyword |
+| Static local variable (including `static const`) | `UNSUPPORTED_SOURCE` | the declaration |
+| External function, external object, `extern` declaration | `UNSUPPORTED_SOURCE` | first reference or declaration |
+| More than one definition, or a non-function top-level declaration | `UNSUPPORTED_SOURCE` / `INVALID_SOURCE` | the offending node |
+| Syntax error under `-std=c11 -pedantic-errors` | `INVALID_SOURCE` | first compiler error |
+| Input that parses but fails object compilation | `INVALID_SOURCE` | first `input.c:line:column` in the compiler output |
+| Missing compiler or missing libclang | `DEPENDENCY_UNAVAILABLE` | – |
+| Analysis or compilation beyond the stage budget | `ANALYSIS_TIMEOUT` | – |
+
+Two details matter for the rest of the team:
+
+- Macro detection does not depend on searching for `#`. The name table is
+  checked on raw identifier tokens, so `int f(void){return __LINE__;}` is
+  rejected with a location even though the text contains no directive.
+- A name is only treated as an extension when libclang lexes it as a keyword.
+  `int typeof = 1;` is legal C11 and stays accepted, while `typeof(1) x;` is
+  rejected by the reference check.
+
+Macro names inside comments and string literals are ordinary text: they are
+lexed as `COMMENT` and `STRING_LITERAL`, so `"__LINE__"` and
+`/* __FILE__ */` are accepted. Escaped spellings such as `"a\tb"` keep their
+raw text and their width is `len(spelling)`.
+
+## Character and line rules
+
+- `original_source` is retained byte for byte. `normalized_source` replaces CRLF
+  and lone CR with LF; token positions stay on the original line and column.
+- A virtual final LF is added for parsing and object compilation when the input
+  does not end with a newline. Nothing is added to the returned model.
+- Comments are lexed first, then treated as whitespace by the caller. A
+  comment's own spelling is preserved with normalized newlines.
+- A tab outside tokens is accepted and reported at its original character
+  index; a tab inside a token is rejected.
+
+## The `can_join` decision
+
+`can_join(run_tokens, next_token, profile)` concatenates the spellings of the
+current run and the candidate, re-lexes that text with the same flags, and
+compares the result with the expected `(kind, spelling)` pairs. Consequences:
+
+- `f` + `(` joins; `a` + `)` joins; `)` + `{` joins.
+- `+` + `+`, `/` + `*`, `/` + `/`, `<` + `<`, `-` + `>` do not join: they would
+  form one token.
+- Three independent `.` tokens are rejected as a run, not pair by pair.
+- `1` + `.` and `L` + `"a"` do not join: the concatenation is a different token.
+- An empty run is always joinable; an empty spelling is a programming error.
+
+Results are cached in the parent process by expected tokens, compiler flags and
+lexer timeout. Cache misses share one serialized child (`LexWorker`) with a
+single libclang index, bounded wait and a kill-and-restart path. C still checks
+its own context around every join decision; `can_join` itself is a local lexical
+helper, not a schedulable stage.
+
+## Process and dependency boundary
+
+A and E share the public process module `codeart.procutil`. A imports
+`run_command`, `BuildSession`, `stop_process` and the stop exceptions from it;
+`_verification_process` is a compatibility shim and is not imported by any
+module in the package. `tests/test_module_boundaries.py` fails if a private
+cross-owner import returns, or if `codeart.procutil.__all__` loses a name A uses.
+
+All children start in their own session on POSIX, run under the caller's
+`RunContext`, and are killed and reaped by the caller on cancellation or
+timeout. The lexer child never outlives the parent: `LexWorker` registers an
+`atexit` close and reaps a hung worker before starting the next one.
+
+## Budget and cancellation
+
+`analyze_source` builds an internal context whose deadline is the smaller of the
+caller's deadline and `profile.lex_timeout`, so lexing and the object build
+share one analysis budget. A cancelled pipeline raises `StageError(CANCELLED)`;
+an expired deadline raises `StageError(PIPELINE_TIMEOUT)`; an exhausted analysis
+budget raises `ANALYSIS_TIMEOUT`. The diagnostics keep the code and stage, so F
+can display them without parsing text.
+
+## Tests and evidence
+
+```sh
+python -m pytest -q tests/test_source.py tests/test_source_lexer.py \
+  tests/test_source_boundaries.py tests/test_module_boundaries.py
+python -m scripts.check_source_diagnostics --output docs/reports/a_source/A_diagnostics.json
+```
+
+`tests/test_source.py` keeps the shared-contract, pipeline and cancellation
+cases; `tests/test_source_lexer.py` covers worker reuse and restart;
+`tests/test_source_boundaries.py` covers input limits, macro and extension
+handling, CRLF positions, compiler-error locations and every `can_join`
+boundary; `tests/test_module_boundaries.py` guards the A/E import boundary.
+`scripts/check_source_diagnostics.py` writes the ten documented demonstration
+cases with their codes and positions, and exits nonzero if one changes.
+See [the Part A completion checks](../reports/A_source.md) for the recorded run.
+
+## Known limits
+
+- The predefined-macro table is a fixed list. A macro that is neither in the
+  table nor expanded as a visible instantiation would surface as an undeclared
+  reference instead; the code is still `UNSUPPORTED_SOURCE`, the message differs.
+- Extension rejection is keyword-based. An extension that this compiler lexes as
+  an ordinary identifier (for example `typeof` written by itself) is caught by
+  the reference check rather than by the keyword rule.
+- `can_join` decides lexical safety only. It does not prove that the resulting
+  layout keeps comments, holes or required separators intact; E's re-lex of the
+  complete output remains the final check.
+- A tab outside tokens is preserved as a character but the layout stage never
+  emits tabs; the generated source uses spaces only.
