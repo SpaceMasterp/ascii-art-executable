@@ -1,11 +1,11 @@
-case: clamp_code
+anchor: main@6ae7bc6
+case: clamp_code (32 rows, scale 1)
 token: PASS
 geometry: PASS
 compile: PASS
 behavior: NOT_RUN (NO_FIXTURE)
-coverage: 0.9986
+coverage: 0.9986 (token 0.0125, block 0.5123, line 0.4738)
 comment_cells: {'block': 2128, 'line': 1968}
 attempts: 1
-scale: 1
 clang -c rc: 0
 stderr: 

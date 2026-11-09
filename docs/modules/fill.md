@@ -114,20 +114,24 @@ that is E's job.
 ## Real-layout evidence
 
 `scripts/generate_d_reports.py` regenerates the 18 ordinary-input cases
-(6 functions × 3 shapes) under `docs/reports/`:
+(6 functions × 3 shapes) under `docs/reports/`. Evidence is anchored to the
+base commit recorded as `main@<sha>` in the manifest and check table.
 
-- `case_<function>_<shape>.c` plus a matching `.log`;
-- `D_manifest.csv` with statuses, coverage, comment counts, attempts, scale,
-  duration and the independent compile result;
-- `D_checklist.md`, the human-readable table.
+- `case_<function>_<shape>_h<rows>_s<scale>.c` plus a matching `.log`;
+- `D_manifest.csv` with statuses, coverage split, comment counts, attempts,
+  scale, duration and the independent compile result;
+- `D_cases.md` and `D_checklist.md`, the human-readable tables.
 
-Measured on `main` (macOS arm64, Python 3.11, Apple clang 21):
+Measured on `main@6ae7bc6` (macOS arm64, Python 3.11, Apple clang 21):
 
 | metric | result |
 |---|---|
 | token / geometry / compile | 18/18 PASS |
 | behavior | 18/18 `NOT_RUN (NO_FIXTURE)` as expected for ordinary input |
 | coverage | 0.9886 – 0.9990 |
+| token coverage | 0.0082 – 0.0555 |
+| block-comment coverage | 0.0000 – 0.5123 |
+| line-comment coverage | 0.4687 – 0.9764 |
 | hole ink | 0 in every cat/code case |
 | block comments | minimum length 5 (grammar minimum 4) |
 | line comments | every `//` reaches the end of its row |

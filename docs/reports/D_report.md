@@ -35,15 +35,19 @@ changes the layout.
   checks, then `clang -std=c11 -pedantic-errors -c`.
 
 `scripts/generate_d_reports.py` regenerates 18 ordinary-input cases
-(6 functions × 3 shapes) and their logs, manifest and check table.
+(6 functions × 3 shapes) and their logs, manifest and check table. Evidence is
+anchored to the base commit recorded as `main@<sha>`.
 
-## Results (main snapshot)
+## Results (main@6ae7bc6 snapshot)
 
 | metric | result |
 |---|---|
 | token / geometry / compile | 18/18 PASS |
 | behavior | 18/18 `NOT_RUN (NO_FIXTURE)` (ordinary input) |
 | coverage | 0.9886 – 0.9990 |
+| token coverage | 0.0082 – 0.0555 |
+| block-comment coverage | 0.0000 – 0.5123 |
+| line-comment coverage | 0.4687 – 0.9764 |
 | hole ink | 0 |
 | shortest block comment | 5 cells (grammar minimum 4) |
 | line comments | every `//` reaches the row end |
@@ -61,6 +65,6 @@ changes the layout.
 
 ## Artifacts
 
-- `docs/reports/case_<function>_<shape>.c` and `.log`
+- `docs/reports/case_<function>_<shape>_h<rows>_s<scale>.c` and `.log`
 - `docs/reports/D_manifest.csv`
-- `docs/reports/D_checklist.md`
+- `docs/reports/D_checklist.md` and `docs/reports/D_cases.md`

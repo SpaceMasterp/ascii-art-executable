@@ -1,11 +1,11 @@
-case: gcd_cat
+anchor: main@6ae7bc6
+case: gcd_cat (32 rows, scale 1)
 token: PASS
 geometry: PASS
 compile: PASS
 behavior: NOT_RUN (NO_FIXTURE)
-coverage: 0.9886
+coverage: 0.9886 (token 0.0555, block 0.1550, line 0.7781)
 comment_cells: {'block': 204, 'line': 1024}
 attempts: 1
-scale: 1
 clang -c rc: 0
 stderr: 
