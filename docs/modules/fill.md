@@ -105,9 +105,41 @@ that is E's job.
   last span line comment;
 - `allow_line_comments=False`;
 - string literal with an internal space (`"a b"` is one 5-cell token);
-- a real `int div(int a, int b){return a/b;}` function: the rendered source is
-  re-lexed with Clang and compared token by token, then compiled with
-  `clang -std=c11 -pedantic-errors -c`.
+- a real A → C → D regression for `div` and `gcd` on all three shapes:
+  `source.analyze_source` → `layout.fit_layout` → `render_source`, then the
+  rendered source is re-lexed through the shared profile, checked with
+  `check_geometry`, inspected for hole ink / division adjacency / line tails,
+  and compiled with `clang -std=c11 -pedantic-errors -c`.
+
+## Real-layout evidence
+
+`scripts/generate_d_reports.py` writes the 18 ordinary-input cases
+(6 functions × 3 shapes) into a **fresh** `--output-dir`. It refuses an existing
+directory, never deletes other members' evidence, and exits non-zero when a
+required check is not PASS, diagnostics are present, or only a partial result
+is available. Evidence records the full HEAD, branch, dirty flag and base.
+
+- `case_<function>_<shape>_h<rows>_s<scale>.c` plus a matching `.log`;
+- `D_manifest.csv` with statuses, coverage split, comment counts, attempts,
+  scale, duration and the independent compile result;
+- `D_cases.md`, the run-local table; `D_checklist.md` summarizes the DoD.
+
+Measured at HEAD `fff14b9ce23c4da0d64ab5aac7bf38482a601ea2`
+(branch `part-d-real-layout`, dirty: no, base `main@94cd53d`):
+
+| metric | result |
+|---|---|
+| token / geometry / compile | 18/18 PASS |
+| behavior | 18/18 `NOT_RUN (NO_FIXTURE)` as expected for ordinary input |
+| coverage | 0.9886 – 0.9990 |
+| token coverage | 0.0082 – 0.0555 |
+| block-comment coverage | 0.0000 – 0.5123 |
+| line-comment coverage | 0.4687 – 0.9764 |
+| hole ink | 0 in every cat/code case |
+| block comments | minimum length 5 (grammar minimum 4) |
+| line comments | every `//` reaches the end of its row |
+| layout attempts / scale | 1 / 1 (these inputs fit at the base height) |
+| independent `clang -c` | rc 0 in 18/18 cases |
 
 ## Known limits
 
@@ -115,3 +147,7 @@ that is E's job.
 - Line comments are single-line by construction; no backslash continuation.
 - Coverage is a layout consequence: if C leaves small spans, D cannot raise it
   without breaking the boundary rules.
+- Ordinary input has no behavior fixture, so `behavior_status` is `NOT_RUN`
+  with reason `NO_FIXTURE`; the 144 comparisons belong to E's builtin matrix.
+- D reads the real `LayoutPlan` from C; it does not choose sizes, scales or
+  retry counts. Automatic scaling is exercised by C/E, not by these cases.

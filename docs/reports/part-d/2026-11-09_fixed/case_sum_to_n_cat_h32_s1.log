@@ -1,0 +1,13 @@
+head: fff14b9ce23c4da0d64ab5aac7bf38482a601ea2
+branch: part-d-real-layout dirty: no
+case: sum_to_n_cat (32 rows, scale 1)
+token: PASS
+geometry: PASS
+compile: PASS
+behavior: NOT_RUN (NO_FIXTURE)
+coverage: 0.9962 (token 0.0266, block 0.1748, line 0.7948)
+comment_cells: {'block': 230, 'line': 1046}
+attempts: 1
+clang -c rc: 0
+diagnostics: -
+stderr: 
