@@ -1,5 +1,7 @@
 # Code Art Studio
 
+English · [简体中文](README.zh-CN.md)
+
 Reformat one self-contained C11 function into a circle, a cat head or hollow
 CODE while preserving effective tokens. Python implements the pipeline,
 libclang checks source structure and lexical boundaries, and Clang compiles
@@ -33,6 +35,27 @@ manual dispatch or on a `macos-ci` label. See
 [continuous integration](#continuous-integration). Local
 validation also uses macOS, Python 3.14 and Apple Clang. The exact local
 versions are available in the environment report.
+
+## Status
+
+The functional baseline at main `4b8b5b8` passed 216 tests locally, all 18
+fixed-size cases and 144 behavior comparisons, plus the cat checks at 1x,
+2x and 4x. Later commits have their own CI logs and versioned evidence.
+
+| Check or delivery | Status | Evidence or interpretation |
+| --- | --- | --- |
+| Fixed h32 matrix | PASS on the baseline | 18 outputs; token, geometry, compile and behavior checked |
+| Built-in behavior | PASS on the baseline | 144 actual comparisons |
+| Cat h32/h64/h128 | PASS on the baseline | B references loaded by E |
+| Custom-source behavior | NOT_RUN by design | NO_FIXTURE |
+| Behavior above the size limit | NOT_RUN by resource policy | OUTPUT_TOO_LARGE |
+| Current CI | See the current run | [Actions](https://github.com/nukofish/ascii-art-executable/actions/workflows/tests.yml) |
+| Owner completion sheets | Versioned separately | [Reports index](docs/reports/README.md) |
+
+Reproduce acceptance with the command below and inspect `report.json`:
+`passed` combines the fixed matrix and scaled-cat checks. The acceptance
+CLI exit code alone describes the fixed matrix. Archived reports retain the
+results of their original commit, including earlier NOT_RUN states.
 
 ## Local web interface
 
@@ -184,5 +207,38 @@ Add the label for the C analyzer, the Clang or libclang integration, the browser
 script or the collected test count. Use `macos-ci` when the change can only be
 validated against Apple Clang, such as compiler-flag or Mach-O specific work.
 
-A PR should include the actual test result and relevant environment
-information. See [the F completion checklist](docs/reports/F_acceptance.md).
+## Clang and libclang troubleshooting
+
+**Compiler not found.** The Clang command-line compiler and the Python
+libclang package are separate dependencies. On macOS, install Apple's tools
+with `xcode-select --install`, then check `clang --version`. On Ubuntu 24.04,
+run `sudo apt-get update && sudo apt-get install -y clang-18`, then
+`export PATH="/usr/lib/llvm-18/bin:$PATH"`.
+
+**No module named clang, or libclang cannot load.** Run pip with the same
+interpreter used to launch the app:
+
+```sh
+python -m pip install -r requirements-dev.txt
+python -m pip show libclang clang
+python -c "import clang.cindex; clang.cindex.Index.create(); print('libclang loaded')"
+```
+
+The project pins `libclang==18.1.1`, including its native library. Apple's
+Clang executable does not install this Python package. Avoid adding the
+separate `clang` package to the same environment because both packages use
+the `clang` import namespace. If an environment has mixed packages, create
+a fresh virtual environment and install the requirements there.
+
+**Tests fail in one terminal but work in another.** Compare
+`python -m codeart.environment`, `python -m pip --version` and
+`clang --version` in both. Check the active virtual environment and PATH.
+Attach the version report, exact command, input and diagnostic to the issue.
+
+**A check says NOT_RUN.** Read its reason. `NO_FIXTURE` is expected for
+ordinary or edited input. `OUTPUT_TOO_LARGE` skips behavior due to the
+configured canvas limit. `DEPENDENCY_UNAVAILABLE` requires fixing the
+compiler or library installation; it is not a passing check.
+
+See [F's delivery follow-up](docs/reports/F_delivery.md) and
+[the original completion checklist](docs/reports/F_acceptance.md).

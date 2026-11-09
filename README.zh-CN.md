@@ -1,0 +1,169 @@
+# Code Art Studio
+
+[English](README.md) · 简体中文
+
+将一个自包含的 C11 函数排成圆形、猫头或镂空 CODE，保留有效 token
+的原始拼写与顺序。工具使用 Python，libclang 负责源码分析与词法检查，
+Clang 负责编译。词法、几何、编译、行为四项结果分别展示。
+
+## 安装
+
+需要 Python 3.10 或更新版本，以及支持 C11 的 Clang 编译器。
+
+macOS 缺少编译器时，先运行 `xcode-select --install`。
+Ubuntu 24.04 可以运行以下命令：
+
+```sh
+sudo apt-get update
+sudo apt-get install -y clang-18
+export PATH="/usr/lib/llvm-18/bin:$PATH"
+```
+
+在仓库根目录创建环境并安装固定版本依赖：
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m codeart.environment
+python -m pytest -q
+```
+
+`requirements.txt` 用于运行，固定 `libclang==18.1.1`，包含 Python
+绑定及原生库。开发依赖另外固定 pytest 9.2.0。请用
+`python -m pip`，确保安装与运行使用同一个解释器。
+
+## 当前状态
+
+main 的 `4b8b5b8` 基线已在本地通过 216 项测试、18 份固定尺寸输出、
+144 次行为对照，以及猫头 1×、2×、4× 检查。后续提交以对应 CI 和带版本
+锚点的报告为准。
+
+| 项目 | 状态 | 说明 |
+| --- | --- | --- |
+| 固定 h32 矩阵 | 基线 PASS | 18 份输出的四项检查通过 |
+| 内置样例行为 | 基线 PASS | 实际完成 144 次比较 |
+| 猫头 h32/h64/h128 | 基线 PASS | E 已加载 B 的参考数据 |
+| 普通或修改后的输入 | 行为 NOT_RUN | 原因为 NO_FIXTURE |
+| 超过行为尺寸限制 | 行为 NOT_RUN | 原因为 OUTPUT_TOO_LARGE |
+| 当前 CI | 查看实际运行 | [GitHub Actions](https://github.com/nukofish/ascii-art-executable/actions/workflows/tests.yml) |
+| 各成员完成检查表 | 分别记录版本 | [报告目录](docs/reports/README.md) |
+
+历史报告保留原提交的结果，包括当时的 NOT_RUN。判断新版本时，重新运行
+验收并读取新报告，不能仅根据旧报告或退出码认定全部通过。
+
+## 本地网页
+
+```sh
+python -m codeart.app
+```
+
+打开 **http://127.0.0.1:8765**。端口被占用时使用 `--port 8766`。
+
+1. 选择六个内置样例之一、打开 .c 文件，或粘贴完整函数。
+2. 选择圆形、猫头或镂空 CODE，以及 1 到 4 的初始倍率。
+3. 生成后查看原文、图案、实际尺寸、倍率、尝试次数、覆盖率和四项检查。
+4. 查看诊断及布局历史，下载源码或 JSON 报告。
+5. 生成过程中可以取消，已完成的结果会保留。
+
+网页只监听本机回环地址，同时运行一个生成任务，在内存中保留最近五次结果。
+重启服务或结果被淘汰前，请保存下载。按 Ctrl+C 请求取消并关闭服务。
+
+预览使用仓库附带的 Roboto Mono Regular，行高为字符宽度的两倍，与 B 的
+0.5 字符比例一致。空格和 LF 被保留，长行横向滚动。字体遵循 SIL Open
+Font License，完整许可位于 `codeart/web/fonts/OFL.txt`。
+
+## 命令行
+
+运行真实内置样例并进行行为对照：
+
+```sh
+python -m codeart.cli --sample max2 --shape cat --scale 1.5 \
+  --output max2_cat.c --report max2_cat.json
+```
+
+验证普通输入：
+
+```sh
+python -m codeart.cli --source example.c --shape circle --output generated.c
+```
+
+样例包括 max2、min2、clamp、absdiff、gcd、sum_to_n，每个有八组固定输入。
+普通输入和修改后的样例没有匹配夹具，行为检查显示
+`NOT_RUN (NO_FIXTURE)`，同名函数不会自动取得行为执行资格。
+源码文件、生成文件和 JSON 报告应使用不同路径。
+
+检查失败或流水线有诊断时返回非零退出码。普通输入在词法、几何、编译通过、
+行为因没有夹具而跳过时，可以正常返回成功。`--demo` 保留早期模拟流程，
+其中的验证明确标为未运行。
+
+## 输入范围
+
+只接收一个自包含 C11 函数，使用可打印 ASCII。支持参数、自动局部变量和
+自身递归。拒绝外部声明、预处理依赖、static 局部变量、反斜杠续行、三字符组
+和 token 内的真实 tab。详见 [A 的源码说明](docs/modules/source.md)。
+
+结果提供词法保持、编译通过及给定样例行为一致的证据。没有执行的检查显示
+NOT_RUN 和原因；几何失败时不会显示整体验证通过。
+
+## 正式验收
+
+```sh
+python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
+```
+
+每次使用一个尚不存在的新目录。报告记录 commit、工作区状态、18 份 h32
+输出和实际行为比较次数，同时核对猫头的 h32/h64/h128 参考数据。
+请检查 `report.json` 的 `passed`，它合并固定矩阵和放大检查结果。
+验收命令的退出码目前仅反映固定矩阵。
+
+[验证说明](docs/modules/verify.md)、
+[报告目录及自动放大演示](docs/reports/README.md)、
+[F 的后续交付记录](docs/reports/F_delivery.md)。
+
+## CI
+
+日常主干检查使用 Ubuntu 24.04、Python 3.12、Clang 18 和 pip 提供的
+libclang 18.1.1。全量任务运行测试、前端脚本语法检查、测试数量守卫及正式验收，
+并上传以 commit 命名的源码和报告附件。
+
+| 事件 | Ubuntu 快速检查 | Ubuntu 全量与正式验收 | macOS 附加全量 |
+| --- | --- | --- | --- |
+| PR 创建、更新、重开 | 运行 | 运行 | 跳过 |
+| PR 加上 full-ci 标签 | 运行 | 运行 | 运行 |
+| 推送 main 或 v* 标签 | 运行 | 运行 | 跳过 |
+| Actions 手动运行 | 运行 | 运行 | 运行 |
+
+需要跨平台验证时，使用 `full-ci` 标签，或在 Actions 中手动运行
+Python tests。macOS 运行器容量不足可能延迟这次附加检查。
+同一 PR 的新事件会取消旧运行。PR 应写明实际命令、测试结果和环境版本。
+
+## Clang 与 libclang 排错
+
+**找不到 clang 命令**
+
+Clang 编译器与 Python libclang 包需要分别安装。macOS 使用 Apple 开发者
+命令行工具，Ubuntu 按上面的 Clang 18 命令安装。安装后先检查
+`clang --version` 和 `python -m codeart.environment`。
+
+**No module named clang 或原生库加载失败**
+
+```sh
+python -m pip install -r requirements-dev.txt
+python -m pip show libclang clang
+python -c "import clang.cindex; clang.cindex.Index.create(); print('libclang loaded')"
+```
+
+Apple Clang 命令可用，并不代表当前 Python 已安装绑定。项目固定的
+`libclang==18.1.1` 自带原生库；不要在同一个环境额外安装同名命名空间的
+`clang` 包。如果已有环境混装，创建一个新虚拟环境再安装仓库依赖。
+
+**换终端后测试结果不同**
+
+比较 `python -m codeart.environment`、`python -m pip --version`
+与 `clang --version`，检查虚拟环境和 PATH。反馈时附上版本、命令、输入和诊断。
+
+**检查显示 NOT_RUN**
+
+`NO_FIXTURE` 表示没有行为夹具，`OUTPUT_TOO_LARGE` 表示因尺寸跳过行为。
+`DEPENDENCY_UNAVAILABLE` 则需要修复安装，不能记为通过。
