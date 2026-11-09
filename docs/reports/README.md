@@ -12,6 +12,7 @@ Do not overwrite an earlier run when the source or revision differs.
 ## Report index
 
 - [Current status and reproduction commands](../../README.md#status)
+- [Part B shape checks](B_shapes.md)
 - [Part C layout checks](C_layout.md)
 - [Part D completion checklist](D_checklist.md)
 - [Part D detailed report](D_report.md)

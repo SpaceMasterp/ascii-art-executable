@@ -1,24 +1,32 @@
 # Part F CI and documentation follow-up
 
-Functional baseline is main
-`4b8b5b8b29e761e5e808b5dfc69acb4b4d004f94`.
-Its clean-checkout production acceptance passed the 18 fixed cases, 144 behavior
-comparisons and cat scales 1, 2 and 4; the local full suite passed 216 tests.
+The workflow implementation is source commit
+`97adf33071ec33c4aab303a03ed63eaf3b9d519d`.
+[Actions run 42633564163](https://github.com/nukofish/ascii-art-executable/actions/runs/42633564163)
+tested PR merge commit `9ea8a2e32e97abc9f464e109032f186ed8310b53`.
+The acceptance artifact records this exact commit and `checkout_dirty=false`.
 
-This follow-up changes the CI baseline and documentation. The application and
-pipeline interfaces are unchanged. Ubuntu 24.04 runs the complete suite and
-production acceptance on each trigger. macos-15 is an additional manual or
-full-ci-labelled PR check. The Python libclang package remains pinned to 18.1.1.
+The runner used Ubuntu 24.04, Python 3.12, Clang 18.1.3, libclang 18.1.1 and
+pytest 9.2.0. No application or pipeline interface changed. The branch also
+includes B's newly merged completion sheet.
 
-| Input | Command or action | Expected | Evidence |
-| --- | --- | --- | --- |
-| Latest branch | Ubuntu full job | Complete tests pass | PR Actions run |
-| Fixed and scaled-cat acceptance | scripts.run_verification plus report passed check | passed=true, 144 comparisons | Commit-named Actions artifact |
-| Browser script | node --check codeart/web/app.js | Syntax accepted | Ubuntu job log |
-| Base and current collection | scripts/check_test_count.py | Current count is not lower | Ubuntu job log |
-| Installation guide | English and Chinese README | Matching commands, dependencies and CI policy | README.md, README.zh-CN.md |
+| Commit | Input | Command or action | Expected | Actual | Evidence | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| 9ea8a2e | Full repository | python -m pytest -q | Complete suite passes | 216 passed in 19.07s | Ubuntu full job log | PASS |
+| 9ea8a2e | Fixed samples and cat scales | scripts.run_verification and overall passed assertion | passed=true, 144 comparisons | 18 C files, 144 comparisons, scales 1/2/4 PASS | Commit-named Actions artifact | PASS |
+| 9ea8a2e | Python native binding | clang.cindex.Index.create() | Bundled library loads | libclang loaded | Environment step | PASS |
+| 9ea8a2e | Browser JavaScript | node --check codeart/web/app.js | Valid syntax | Command succeeded | Ubuntu full job log | PASS |
+| 9ea8a2e | Base and current collection | scripts/check_test_count.py | No decrease | Base 216, current 216 | Ubuntu full job log | PASS |
+| 9ea8a2e | Pure-Python modules | Fast Ubuntu job | Tests pass | 90 passed | Ubuntu fast job log | PASS |
+| 9ea8a2e | PR without full-ci label | Optional macOS job | Skip | SKIPPED as configured | Actions job list | NOT_RUN |
+| 97adf33 | English and Chinese guides | Read setup and CI tables | Matching commands and dependencies | Both document the same policy and troubleshooting | README.md, README.zh-CN.md | PASS |
 
-The workflow records the compiler version and the complete environment report.
-The acceptance artifact carries the exact commit and checkout state.
-Historical F reports remain anchored to their original implementations.
-Owner completion sheets for other modules are maintained by those owners.
+Ubuntu runs the complete suite and production acceptance on every workflow
+trigger. macos-15 runs only for workflow_dispatch or a full-ci-labelled PR.
+Its skipped state in this run is separate from functional acceptance.
+The original library and runtime budgets remain in effect.
+
+The artifact contains 18 generated C files and report.json. It includes
+per-check states, diagnostics, compiler information, build counts and scaled
+cat results. Historical F reports retain their own version anchors.
+Other module owners maintain their own completion sheets.
