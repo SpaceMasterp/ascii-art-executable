@@ -150,6 +150,20 @@ def test_old_positional_generation_result_constructor_still_works():
     assert result.status == GenerationStatus.FAILED
 
 
+@pytest.mark.parametrize("status", [GenerationStatus.FAILED, GenerationStatus.CANCELLED])
+def test_failed_or_cancelled_result_is_not_verified(status):
+    report = VerificationReport(
+        token_status=CheckStatus.PASS,
+        geometry_status=CheckStatus.PASS,
+        compile_status=CheckStatus.PASS,
+        behavior_status=CheckStatus.PASS,
+    )
+    summary = describe_result(GenerationResult(verification=report, status=status))
+
+    assert summary["status"] == status.value
+    assert summary["verified"] is False
+
+
 @pytest.mark.parametrize(("case", "checks", "status"), [
     ("pass", {"token": "PASS", "geometry": "PASS", "compile": "PASS", "behavior": "PASS"}, "OK"),
     ("token_mismatch", {"token": "FAIL", "geometry": "PASS", "compile": "NOT_RUN", "behavior": "NOT_RUN"}, "FAILED"),

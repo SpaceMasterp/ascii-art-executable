@@ -48,7 +48,8 @@ def describe_result(result):
             reason = stop_reason
         checks[name] = {"status": status.value, "reason": reason}
     verified = (
-        not result.diagnostics
+        result.status == GenerationStatus.OK
+        and not result.diagnostics
         and all(checks[name]["status"] == "PASS" for name in CHECKS[:3])
         and checks["behavior"]["status"] != "FAIL"
     )
