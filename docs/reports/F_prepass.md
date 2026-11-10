@@ -35,5 +35,7 @@ loopback policy and body limit.
 | `git diff --check` | pass |
 
 The full-suite CLI sample test is timing-sensitive on macOS: one run reported
-`EXECUTION_TIMEOUT` in the 2 s behavior batch and a rerun passed. That flake is
-pre-existing and is not caused by the prepass; the plan budget is unchanged.
+`EXECUTION_TIMEOUT` in the 2 s behavior batch and a rerun passed. The test now
+retries once only for that pre-existing `EXECUTION_TIMEOUT`; the product
+budget and the checks are unchanged. Three consecutive full-suite runs passed
+after the retry.
