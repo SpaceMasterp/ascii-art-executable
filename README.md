@@ -288,5 +288,5 @@ Only the extracted function is verified, not the entire input program.
 
 `code_fill_ratio` is effective non-space token ink divided by allowed cells
 (the renderer's token coverage), excluding filler comments. It is
-informational only: it does not affect verification or layout and makes no
-size recommendation.
+informational only: it does not affect verification or layout. Below 10%,
+it suggests considering a smaller shape without automatically changing size.

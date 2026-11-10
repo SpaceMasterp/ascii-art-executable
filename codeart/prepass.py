@@ -56,7 +56,13 @@ def _mask_comments_and_literals(text):
 
 def _mask_directives(masked):
     """Hide directive lines, including backslash continuations, for braces."""
-    return re.sub(r'^\s*#[^\n]*(?:\\\n[^\n]*)*', _blank, masked, flags=re.M)
+    output = []
+    continuation = False
+    for line in masked.splitlines(keepends=True):
+        directive = continuation or line.lstrip().startswith('#')
+        continuation = directive and line.rstrip('\n').endswith('\\')
+        output.append(''.join('\n' if c == '\n' else ' ' for c in line) if directive else line)
+    return ''.join(output)
 
 
 def _conditional_lines(masked_code):

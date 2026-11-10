@@ -90,6 +90,8 @@ def main(argv=None) -> int:
               f"attempts={plan.attempt_count}", file=sys.stderr)
     if result.rendered is not None:
         print(f"coverage={result.rendered.coverage:.2%}; code_fill_ratio={result.rendered.token_coverage:.2%}", file=sys.stderr)
+    if result.rendered is not None and result.rendered.token_coverage < 0.10:
+        print("Low code fill: consider a smaller shape.", file=sys.stderr)
     report = result.verification
     for name in CHECKS:
         status = getattr(report, f"{name}_status", CheckStatus.NOT_RUN)

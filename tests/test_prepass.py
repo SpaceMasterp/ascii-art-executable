@@ -44,7 +44,7 @@ def test_cli_file_report(tmp_path):
     assert data['prepass']['ignored_lines'][0]['start_line'] == 1
     assert data['code_fill_ratio'] == data['coverage']['token']
     assert data['code_fill_ratio'] < 0.1
-    assert 'code_fill_warning' not in data
+    assert data['code_fill_warning']
     assert output.exists()
 
 
@@ -151,3 +151,10 @@ def test_web_file_mode_generates_extracted_function():
         server.server_close()
         server.jobs.shutdown()
         worker.join()
+
+
+def test_macro_continuation_is_not_a_function_definition():
+    text = '#define BODY ' + chr(92) + chr(10) + 'int fake(void){return 1;}\nint real(void){return 2;}'
+    result = inspect_file(text)
+    assert [c.name for c in result.candidates] == ['real']
+    assert result.selected == 'real'

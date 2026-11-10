@@ -144,7 +144,7 @@ function render(job) {
   byId("attempt-count").textContent = "(" + result.attempt_history.length + ")";
   const message = result.verified ? (result.checks.behavior.status === "PASS" ? "All four checks passed." : "Token, geometry and compilation passed. Behavior was not run.") : "Generation finished with issues. Review the checks and diagnostics.";
   byId("summary").textContent = result.verified ? "Verified" : "Review required";
-  status(message, !result.verified);
+  status(message + (result.code_fill_warning ? " " + result.code_fill_warning : ""), !result.verified);
 }
 async function poll(identifier) {
   if (active !== identifier) return;

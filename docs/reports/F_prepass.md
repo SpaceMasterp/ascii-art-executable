@@ -11,7 +11,7 @@ input, or C's sizing.
 - Locator fixes: comments/literals are masked before locating braces, so a `#if`/`#endif` inside a comment or macro body is ignored. CRLF/lone CR is normalised and a leading UTF-8 BOM is stripped. Function-pointer and parenthesised declarators are named by A's `function_name`.
 - Validation scope: the extracted function only, not the entire original program. Custom extractions do not acquire built-in behavior fixtures.
 - Audit: JSON prepass includes exact extracted text, original line ranges, rejection diagnostics, selection, ignored line intervals and precise `ignored_segments` for same-line prefixes/suffixes.
-- Indicator: `code_fill_ratio` uses D's non-space token ink / allowed cells, excluding filler comments. It is informational only; it does not fail verification, change layout or recommend a size.
+- Indicator: `code_fill_ratio` uses D's non-space token ink / allowed cells, excluding filler comments. Below 10%, an informational hint suggests a smaller shape; it does not fail verification or change layout.
 
 Regression coverage uses real A: external global rejection and original
 locations, definitions versus declarations, comment/literal brace handling,
@@ -39,3 +39,6 @@ The full-suite CLI sample test is timing-sensitive on macOS: one run reported
 retries once only for that pre-existing `EXECUTION_TIMEOUT`; the product
 budget and the checks are unchanged. Three consecutive full-suite runs passed
 after the retry.
+
+Follow-up review: restored the agreed low-fill hint and masked complete macro
+continuations so their bodies cannot become selectable definitions.
