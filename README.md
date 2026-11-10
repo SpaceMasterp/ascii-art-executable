@@ -250,30 +250,43 @@ See [F's delivery follow-up](docs/reports/F_delivery.md) and
 
 ## Complete-file function extraction / 整份文件提取
 
+`--source` remains the v1.4 single-function path. `--file` is an optional
+F-layer convenience: it locates candidate definitions in a complete C file,
+runs each candidate through A's real analyzer, and passes only the chosen
+function to `generate()`. `generate()` and A still accept exactly one
+self-contained function, so this is outside the frozen v1.4 acceptance input;
+use `--sample`/`--source` for acceptance runs.
+
+Duplicate eligible names are reported as `AMBIGUOUS_FUNCTION`; use
+`--function` only when the name is unique.
+
 ```sh
 python -m codeart.cli --file example.c --function helper --shape circle --output helper_art.c --report helper_report.json
 ```
 
-`--source` retains the single-function mode. `--file` extracts definitions,
-excludes `main`, and runs every candidate through A's real analyzer. Omit
-`--function` to choose the first passing candidate. External typedefs, macros,
-globals and other functions are not copied. Conditional preprocessing regions
-are conservatively rejected; the extractor is not a C preprocessor. Comments
-and literals inside the extracted function are retained; A determines support.
+The locator masks comments, literals and directive lines before matching
+braces; a `#if`/`#endif` inside a comment or macro body does not change the
+result. It normalises CRLF/lone CR and strips a leading UTF-8 BOM. `main` and
+functions inside conditional preprocessing regions are ineligible. Omit
+`--function` to choose the first passing candidate. Function-pointer and
+parenthesised declarators are named by A's `function_name`, not by the
+locator's regex. External typedefs, macros, globals and other functions are
+not copied. Comments and literals inside the extracted function are retained;
+A determines support.
+
+The locator is lexical, not a complete C parser or preprocessor: K&R-style
+definitions and some macro-generated declarations may not be listed.
+Conditional regions are rejected conservatively. The JSON `prepass` section
+records candidates, the selection, ignored line ranges and precise
+`ignored_segments` for same-line prefixes/suffixes. It does not claim
+whole-program behavior. Custom extractions have no built-in behavior fixture.
 
 In the web interface, enable **Extract from a complete C file**, click **Find
 functions**, then select a passing candidate. Failed candidates show A's
 original-file diagnostic positions. Generation rechecks the chosen function.
 Only the extracted function is verified, not the entire input program.
-The JSON `prepass` section records candidates, the selection and `ignored_lines`
-with original line ranges and reasons. It does not claim whole-program behavior.
-Custom extractions have no built-in behavior fixture.
 
 `code_fill_ratio` is effective non-space token ink divided by allowed cells
-(the renderer's token coverage), excluding filler comments. Below 10%, CLI and
-web show a suggestion to use a smaller shape; this is not a failed check and
-does not change the layout scale.
-
-整份 `.c` 可包含其它内容，但只有抽出的单个函数参与验证，不代表原程序已通过。
-网页可查看候选及 A 的拒绝原因；报告记录原文件的忽略行区间。中文是否可用仍由
-A 决定。代码占比低于 10% 仅提示，不自动缩小图案；尺寸策略由 C 负责。
+(the renderer's token coverage), excluding filler comments. It is
+informational only: it does not affect verification or layout and makes no
+size recommendation.

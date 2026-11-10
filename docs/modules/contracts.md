@@ -53,6 +53,16 @@ Tests can pass compatible implementations in `PipelineDeps`.
 - **Coordinates.** Grid rows, grid columns, span offsets and token indices
   are zero-based. Source lines and columns shown to users are one-based.
 
+## Optional complete-file prepass
+
+`codeart.prepass` is an F-layer convenience, not a pipeline stage and not a
+member of `PipelineDeps`. It locates candidate definitions in a complete C
+file and asks A to validate each extracted text; only the selected text is
+passed to `generate()`. `generate()` and A still accept exactly one
+self-contained function, so the v1.4 acceptance path is unchanged. The
+prepass result is attached to CLI/web reports as `prepass`; it is not part of
+`GenerationRequest`/`GenerationResult` contracts.
+
 ## Errors, time budgets and cancellation
 
 Each stage receives the same `RunContext`. Check `ctx.check()` in long

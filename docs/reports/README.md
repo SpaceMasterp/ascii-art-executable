@@ -21,6 +21,7 @@ Do not overwrite an earlier run when the source or revision differs.
 - [Part F original checks](F_acceptance.md)
 - [Part F after E integration](F_after_E.md)
 - [Part F CI and bilingual documentation follow-up](F_delivery.md)
+- [Part F complete-file entry and code-fill indicator](F_prepass.md)
 
 Functional acceptance and owner completion sheets have separate version
 anchors. A functional PASS does not imply every owner has submitted a

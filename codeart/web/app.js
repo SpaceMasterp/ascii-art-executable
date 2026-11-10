@@ -12,7 +12,10 @@ async function api(path, options = {}) {
   if (!response.ok) {
     const error = new Error(data.error || "The request failed");
     error.status = response.status;
-    if (data.prepass) byId("candidates").textContent = JSON.stringify(data.prepass, null, 2);
+    if (data.prepass) {
+      byId("candidates").textContent = JSON.stringify(data.prepass, null, 2);
+      byId("candidates").hidden = false;
+    }
     throw error;
   }
   return data;
@@ -61,9 +64,15 @@ function setBusy(value) {
   byId("controls").disabled = value;
   byId("source").readOnly = value;
   byId("file").disabled = value;
+  byId("file-mode").disabled = value;
+  byId("function").disabled = value;
+  byId("inspect-file").disabled = value;
   byId("cancel").hidden = !value;
   byId("cancel").disabled = false;
   byId("generate").textContent = value ? "Generating…" : "Generate artwork ↗";
+}
+function syncFileScope() {
+  byId("file-scope").hidden = !byId("file-mode").checked;
 }
 function render(job) {
   const result = job.result;
@@ -135,7 +144,7 @@ function render(job) {
   byId("attempt-count").textContent = "(" + result.attempt_history.length + ")";
   const message = result.verified ? (result.checks.behavior.status === "PASS" ? "All four checks passed." : "Token, geometry and compilation passed. Behavior was not run.") : "Generation finished with issues. Review the checks and diagnostics.";
   byId("summary").textContent = result.verified ? "Verified" : "Review required";
-  status(message + (result.code_fill_warning ? " " + result.code_fill_warning : ""), !result.verified);
+  status(message, !result.verified);
 }
 async function poll(identifier) {
   if (active !== identifier) return;
@@ -201,6 +210,8 @@ byId("sample").addEventListener("change", () => {
     byId("file-mode").checked = false;
     byId("function").replaceChildren(new Option("First eligible function", ""));
     byId("candidates").textContent = "";
+    byId("candidates").hidden = true;
+    syncFileScope();
   }
   byId("input-kind").textContent = sample ? "Built-in sample · 8 behavior inputs" : "Custom input · no behavior fixture";
   resetResult();
@@ -218,6 +229,7 @@ byId("file").addEventListener("change", async event => {
   if (file.size > 900000) { status("Choose a source file smaller than 900 KB.", true); return; }
   byId("source").value = await file.text();
   byId("file-mode").checked = true;
+  syncFileScope();
   byId("source").dispatchEvent(new Event("input"));
 });
 showChecks();
@@ -269,6 +281,9 @@ byId("inspect-file").addEventListener("click", async () => {
       byId("function").append(option);
     }
     byId("candidates").textContent = JSON.stringify(data.candidates.map(({source_text, ...candidate}) => candidate), null, 2);
+    byId("candidates").hidden = !data.candidates.length;
+    syncFileScope();
+    resetResult();
     status(data.error || data.validation_scope, Boolean(data.error));
   } catch (error) { status(error.message, true); }
   finally { byId("inspect-file").disabled = false; }
@@ -276,4 +291,12 @@ byId("inspect-file").addEventListener("click", async () => {
 byId("source").addEventListener("input", () => {
   byId("function").replaceChildren(new Option("First eligible function", ""));
   byId("candidates").textContent = "";
+  byId("candidates").hidden = true;
 });
+byId("file-mode").addEventListener("change", () => {
+  syncFileScope();
+  if (!byId("file-mode").checked) byId("candidates").hidden = true;
+  resetResult();
+});
+byId("function").addEventListener("change", resetResult);
+syncFileScope();

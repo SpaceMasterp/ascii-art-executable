@@ -44,7 +44,7 @@ def test_cli_file_report(tmp_path):
     assert data['prepass']['ignored_lines'][0]['start_line'] == 1
     assert data['code_fill_ratio'] == data['coverage']['token']
     assert data['code_fill_ratio'] < 0.1
-    assert data['code_fill_warning']
+    assert 'code_fill_warning' not in data
     assert output.exists()
 
 
@@ -63,6 +63,89 @@ def test_web_prepass_endpoint():
             data = json.load(response)
         assert data['selected'] == 'f'
         assert 'not the entire input program' in data['validation_scope']
+    finally:
+        server.shutdown()
+        server.server_close()
+        server.jobs.shutdown()
+        worker.join()
+
+def test_block_comment_directives_are_ignored():
+    result = inspect_file('/*\n#if 0\n*/\nint f(void){return 1;}\n')
+    assert result.selected == 'f'
+    assert result.candidates[0].a_status == 'PASS'
+    inside = inspect_file('int f(void){\n/*\n#if 0\n*/\nreturn 1;\n}\n')
+    assert inside.selected == 'f'
+
+
+def test_comment_endif_does_not_hide_a_conditional_region():
+    result = inspect_file('#if 0\n/*\n#endif\n*/\nint f(void){return 1;}\n')
+    assert result.error == 'NO_ELIGIBLE_FUNCTION'
+    assert result.candidates[0].a_status == 'FAIL'
+
+
+def test_function_pointer_and_parenthesised_names():
+    text = 'int (*f(void))(int) { return 0; }\nint (g)(void) { return 1; }\n'
+    result = inspect_file(text, 'f')
+    assert result.selected == 'f'
+    assert selected_source(result).startswith('int (*f(void))')
+    assert inspect_file(text, 'g').selected == 'g'
+
+
+def test_bom_crlf_and_lone_cr_are_normalised():
+    for text in (
+        '\ufeff#include <stdio.h>\nint f(void){return 1;}\n',
+        '#include <stdio.h>\r\nint f(void){return 1;}\r\n',
+        '#include <stdio.h>\rint f(void){return 1;}\r',
+    ):
+        result = inspect_file(text)
+        assert result.selected == 'f'
+        assert '\r' not in result.candidates[0].source_text
+
+
+def test_same_line_prefix_and_suffix_are_reported():
+    text = 'int a; int f(void){return 1;} int b(void){return 2;}\n'
+    result = inspect_file(text, 'f')
+    assert result.selected == 'f'
+    assert result.ignored_lines == []
+    assert len(result.ignored_segments) == 2
+    assert result.ignored_segments[0]['start_column'] == 1
+    assert result.ignored_segments[0]['end_column'] == 8
+    assert result.ignored_segments[1]['start_column'] == 30
+
+
+def test_main_and_duplicate_names_are_rejected():
+    assert inspect_file('int (main)(void) { return 0; }\n').error == 'NO_ELIGIBLE_FUNCTION'
+    assert inspect_file('int f(void){return 1;}\nint f(void){return 2;}\n').error == 'AMBIGUOUS_FUNCTION'
+
+
+def test_web_file_mode_generates_extracted_function():
+    import json
+    import time
+    from threading import Thread
+    from urllib.request import Request, urlopen
+    from codeart.app import create_server
+    server = create_server(0)
+    worker = Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    base = f'http://127.0.0.1:{server.server_port}'
+    try:
+        payload = json.dumps({
+            'source': '#include <stdio.h>\nint f(int x){return x+1;}\nint main(void){return 0;}\n',
+            'file_mode': True, 'function': 'f', 'shape': 'circle', 'scale': 1,
+        }).encode()
+        request = Request(base + '/api/generate', data=payload,
+                          headers={'Content-Type': 'application/json'})
+        with urlopen(request, timeout=30) as response:
+            job_id = json.load(response)['id']
+        for _ in range(200):
+            with urlopen(base + '/api/jobs/' + job_id, timeout=10) as response:
+                job = json.load(response)
+            if job['state'] == 'finished':
+                break
+            time.sleep(0.02)
+        assert job['result']['prepass']['selected'] == 'f'
+        assert job['source'] == 'int f(int x){return x+1;}'
+        assert job['result']['checks']['token']['status'] == 'PASS'
     finally:
         server.shutdown()
         server.server_close()

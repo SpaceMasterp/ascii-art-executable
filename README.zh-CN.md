@@ -176,32 +176,35 @@ Apple Clang 命令可用，并不代表当前 Python 已安装绑定。项目固
 `NO_FIXTURE` 表示没有行为夹具，`OUTPUT_TOO_LARGE` 表示因尺寸跳过行为。
 `DEPENDENCY_UNAVAILABLE` 则需要修复安装，不能记为通过。
 
-## Complete-file function extraction / 整份文件提取
+## 整份 C 文件提取 / Complete-file extraction
+
+`--source` 仍是 v1.4 的单函数入口。`--file` 是 F 层可选的便利功能：在完整
+C 文件中定位候选函数，逐个交给 A 的真实分析器，只把选中的函数交给
+`generate()`。`generate()` 和 A 仍然只接受一个自包含函数，因此这不属于
+v1.4 冻结验收的输入范围；正式验收请继续使用 `--sample`/`--source`。
+
+重复的可选函数名会报 `AMBIGUOUS_FUNCTION`；只有名字唯一时才应使用 `--function`。
 
 ```sh
 python -m codeart.cli --file example.c --function helper --shape circle --output helper_art.c --report helper_report.json
 ```
 
-`--source` retains the single-function mode. `--file` extracts definitions,
-excludes `main`, and runs every candidate through A's real analyzer. Omit
-`--function` to choose the first passing candidate. External typedefs, macros,
-globals and other functions are not copied. Conditional preprocessing regions
-are conservatively rejected; the extractor is not a C preprocessor. Comments
-and literals inside the extracted function are retained; A determines support.
+定位器会先屏蔽注释、字面量和预处理指令行，再匹配花括号；注释或宏体里的
+`#if`/`#endif` 不会误改条件区域。输入统一 CRLF/单独 CR，并剥离开头的
+UTF-8 BOM。`main` 和条件编译区域里的函数不合格。省略 `--function` 时选择
+第一个通过的候选。函数指针、括号包住函数名等声明符由 A 返回的
+`function_name` 命名，不依赖定位器的正则。外部 typedef、宏、全局对象和
+其它函数不会复制；抽出函数内部的注释和字面量保留，是否可用由 A 判定。
 
-In the web interface, enable **Extract from a complete C file**, click **Find
-functions**, then select a passing candidate. Failed candidates show A's
-original-file diagnostic positions. Generation rechecks the chosen function.
-Only the extracted function is verified, not the entire input program.
-The JSON `prepass` section records candidates, the selection and `ignored_lines`
-with original line ranges and reasons. It does not claim whole-program behavior.
-Custom extractions have no built-in behavior fixture.
+定位器是词法定位，不是完整 C 解析器或预处理器：K&R 风格定义和部分宏生成
+的声明可能列不出来；条件区域按保守策略排除。JSON 的 `prepass` 记录候选、
+选择、忽略行区间，以及同一行前后缀的精确 `ignored_segments`；它不声称
+整个程序通过验证。自定义抽取没有内置行为夹具，行为检查为
+`NOT_RUN (NO_FIXTURE)`。
 
-`code_fill_ratio` is effective non-space token ink divided by allowed cells
-(the renderer's token coverage), excluding filler comments. Below 10%, CLI and
-web show a suggestion to use a smaller shape; this is not a failed check and
-does not change the layout scale.
+网页中勾选 **Extract from a complete C file**，点击 **Find functions**，
+再选择 PASS 候选。失败候选显示 A 映射回原文件的行列。生成时会重新检查
+选中的函数。只验证抽出的函数，不代表原程序已验证。
 
-整份 `.c` 可包含其它内容，但只有抽出的单个函数参与验证，不代表原程序已通过。
-网页可查看候选及 A 的拒绝原因；报告记录原文件的忽略行区间。中文是否可用仍由
-A 决定。代码占比低于 10% 仅提示，不自动缩小图案；尺寸策略由 C 负责。
+`code_fill_ratio` 是有效非空白 token 墨迹除以可填格数（即渲染器的 token
+覆盖率），不计填充注释。它只作参考，不影响验证或布局，也不给出尺寸建议。
