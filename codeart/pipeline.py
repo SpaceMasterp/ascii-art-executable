@@ -10,10 +10,10 @@ from .contracts import (
     GenerationRequest,
     GenerationResult,
     PipelineDeps,
+    PipelineError,
     RunContext,
-    StageError,
 )
-from .shapes import ShapeError, build_mask
+from .shapes import build_mask
 
 
 def production_deps() -> PipelineDeps:
@@ -26,7 +26,7 @@ def production_deps() -> PipelineDeps:
         except ModuleNotFoundError as exc:
             if exc.name != module_name:
                 raise
-            raise StageError(Diagnostic(
+            raise PipelineError(Diagnostic(
                 ErrorCode.DEPENDENCY_UNAVAILABLE, "setup", f"Missing module: {module_name}"
             )) from exc
     return PipelineDeps(
@@ -78,11 +78,11 @@ def generate(
         stop_codes = (ErrorCode.CANCELLED, ErrorCode.PIPELINE_TIMEOUT)
         if not any(item.code in stop_codes for item in result.diagnostics):
             ctx.check()
-    except StageError as exc:
+    except PipelineError as exc:
+        # Keep the code and the stage the failing stage reported: B's shape
+        # failures stay INVALID_SHAPE/INVALID_SIZE at stage "shape" and are
+        # never rewritten into LAYOUT_LIMIT here.
         result.diagnostics.append(exc.diagnostic)
-    except ShapeError as exc:
-        code = ErrorCode.INVALID_SHAPE if exc.code == "INVALID_SHAPE" else ErrorCode.LAYOUT_LIMIT
-        result.diagnostics.append(Diagnostic(code, "layout", exc.message))
     except (ImportError, FileNotFoundError) as exc:
         result.diagnostics.append(Diagnostic(ErrorCode.DEPENDENCY_UNAVAILABLE, stage, str(exc)))
     except Exception as exc:

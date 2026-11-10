@@ -6,6 +6,7 @@ B's module lives in :mod:`codeart.shapes`: it turns a shape request into a
 
 from .shapes import (
     CELL_ASPECT_DEFAULT,
+    CELL_ASPECT_TOLERANCE,
     FontMetrics,
     Mask,
     ShapeError,
@@ -17,6 +18,7 @@ from .shapes import (
 
 __all__ = [
     "CELL_ASPECT_DEFAULT",
+    "CELL_ASPECT_TOLERANCE",
     "FontMetrics",
     "Mask",
     "ShapeError",

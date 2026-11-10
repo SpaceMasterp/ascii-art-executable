@@ -10,10 +10,6 @@ from threading import Event
 from time import monotonic
 from typing import Protocol
 
-# B already owns these public types. Re-export the same classes so callers
-# and build_mask agree on type identity.
-from .shapes import FontMetrics, Mask, ShapeSpec, SizeRequest
-
 
 class CheckStatus(str, Enum):
     PASS = "PASS"
@@ -26,6 +22,7 @@ class ErrorCode(str, Enum):
     UNSUPPORTED_SOURCE = "UNSUPPORTED_SOURCE"
     ANALYSIS_TIMEOUT = "ANALYSIS_TIMEOUT"
     INVALID_SHAPE = "INVALID_SHAPE"
+    INVALID_SIZE = "INVALID_SIZE"
     LAYOUT_LIMIT = "LAYOUT_LIMIT"
     LAYOUT_TIMEOUT = "LAYOUT_TIMEOUT"
     TOKEN_MISMATCH = "TOKEN_MISMATCH"
@@ -42,20 +39,56 @@ class ErrorCode(str, Enum):
 
 @dataclass(frozen=True)
 class Diagnostic:
+    """One diagnosed failure.
+
+    ``line`` and ``column`` point into a source text. ``location`` names the
+    non-source target instead (a request field, e.g.
+    ``"SizeRequest.height_rows"``, or a produced artifact, e.g.
+    ``"Mask.allowed"``); it is ``None`` when the failure has no such target.
+    The field is last so the positional ``Diagnostic(code, stage, message,
+    line, column, details)`` calls of the other stages keep their meaning.
+    """
+
     code: ErrorCode
     stage: str
     message: str
     line: int | None = None
     column: int | None = None
     details: Mapping[str, object] = field(default_factory=dict)
+    location: str | None = None
 
 
-class StageError(Exception):
-    """A diagnosed failure that stops the current stage."""
+class PipelineError(Exception):
+    """A diagnosed failure that stops the current stage.
+
+    This is the canonical name for the shared stage failure. ``StageError`` is
+    kept as a synonym, so existing ``except StageError`` clauses, imports and
+    ``raise StageError(...)`` call sites keep working unchanged.
+    """
 
     def __init__(self, diagnostic: Diagnostic):
         super().__init__(diagnostic.message)
         self.diagnostic = diagnostic
+
+    @property
+    def code(self) -> str:
+        """Compatibility accessor: the diagnostic code as a plain string.
+
+        The old ``ShapeError.code`` was a string (``"INVALID_SHAPE"``), so a
+        string keeps ``exc.code == "INVALID_SHAPE"`` and formatted output
+        unchanged; new code should read ``exc.diagnostic.code``.
+        """
+        return self.diagnostic.code.value
+
+
+#: Synonym for :class:`PipelineError`, kept for the existing stage call sites.
+StageError = PipelineError
+
+# B already owns these public types. Re-export the same classes so callers
+# and build_mask agree on type identity.  This import stays below the error
+# contract because ``codeart.shapes`` imports these error types back to raise
+# them; defining the errors first keeps a single direction of initialisation.
+from .shapes import FontMetrics, Mask, ShapeSpec, SizeRequest  # noqa: E402
 
 
 @dataclass(frozen=True)

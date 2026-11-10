@@ -346,7 +346,7 @@ def _rect_mask(width, height=1):
     allowed = tuple(tuple(True for _ in range(width)) for _ in range(height))
     spans = tuple(((0, width),) for _ in range(height))
     return Mask(kind="rect", width=width, height=height, allowed=allowed,
-                spans=spans, scale=1.0, font_metrics=FontMetrics())
+                spans=spans, font_metrics=FontMetrics())
 
 
 def test_separator_resets_the_contiguous_run():

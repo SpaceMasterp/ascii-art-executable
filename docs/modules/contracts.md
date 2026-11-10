@@ -26,8 +26,11 @@ Tests can pass compatible implementations in `PipelineDeps`.
   `VerificationProfile`.
 - **B to C, E and F.** The contract re-exports B's existing `ShapeSpec`,
   `SizeRequest`, `FontMetrics` and `Mask` classes. The default cell
-  width-to-height ratio is 0.5. C requests a height in rows and B computes the
-  width. Each row's `spans` lists all half-open fillable intervals
+  width-to-height ratio is 0.5; `FontMetrics.cell_aspect` is derived from
+  `cell_width_px / cell_height_px` (or from the fixed default) instead of being
+  a stored field. C requests a height in rows and B computes the width; on
+  `Mask`, `width` and `height` are the only stored size authority and `scale`
+  is derived from `height`. Each row's `spans` lists all half-open fillable intervals
   `[start, end)`. Shape keys are `circle`, `cat` and `code`. The hollow
   text is fixed to `CODE` and `inner_radius` is reserved as `None`.
 - **C to D, E and F.** Call the injected `mask_builder` and `join_checker`.
@@ -57,8 +60,18 @@ loops and before expensive work. Limit child processes to the smaller of
 the remaining stage budget and `ctx.remaining_s()`. Terminate and reap them
 when cancelled or timed out. Layout retries share one stage budget.
 
-A, C and D can raise `StageError(Diagnostic(...))` for diagnosed failures.
-F maps B's existing `ShapeError` to the shared error codes. E reports
+A, B, C and D raise `PipelineError(Diagnostic(...))` for diagnosed failures.
+`PipelineError` is the canonical name for the stage failure; `StageError` is a
+synonym (`StageError is PipelineError`), so the existing
+`raise StageError(...)` / `except StageError` call sites keep working
+unchanged. B raises the same type from `build_mask` and keeps `ShapeError` as a
+synonym of it, so no stage has to map a B-specific exception any more.
+
+A `Diagnostic` carries the `code`, the `stage` that reported it and an optional
+`location` naming a non-source target (for a shape failure,
+`"SizeRequest.height_rows"` or `"Mask.allowed"`); `line`/`column` stay reserved
+for source positions. `INVALID_SIZE` is a first-class `ErrorCode`: a stage that
+reports it keeps it instead of folding it into `LAYOUT_LIMIT`. E reports
 verification failures and skipped checks in its report. F preserves the
 plan, rendered code and partial verification report once returned. The
 display treats checks without a result as `NOT_RUN`.
