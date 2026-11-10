@@ -3,9 +3,11 @@
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 
-from .contracts import CheckStatus, ErrorCode
+from .contracts import CheckStatus, ErrorCode, GenerationResult, GenerationStatus
 
 CHECKS = ("token", "geometry", "compile", "behavior")
+
+FONT_ID = "Roboto Mono Regular"
 
 LOW_CODE_FILL_WARNING = "Token density is low; filler comments occupy most allowed cells."
 
@@ -22,6 +24,16 @@ def json_value(value):
     return value
 
 
+def describe_prepass_failure(extraction):
+    """Serialize a prepass rejection with the same keys as a normal result."""
+    report = describe_result(GenerationResult(status=GenerationStatus.FAILED))
+    report["prepass"] = json_value(extraction)
+    for check in report["checks"].values():
+        check["status"] = CheckStatus.NOT_RUN.value
+        check["reason"] = extraction.error
+    return report
+
+
 def describe_result(result):
     """Retain diagnostics and attempt history without sending the full mask."""
     report = result.verification
@@ -36,7 +48,8 @@ def describe_result(result):
             reason = stop_reason
         checks[name] = {"status": status.value, "reason": reason}
     verified = (
-        not result.diagnostics
+        result.status == GenerationStatus.OK
+        and not result.diagnostics
         and all(checks[name]["status"] == "PASS" for name in CHECKS[:3])
         and checks["behavior"]["status"] != "FAIL"
     )
@@ -48,6 +61,7 @@ def describe_result(result):
     )
     return {
         "verified": verified,
+        "status": result.status.value,
         "checks": checks,
         "diagnostics": json_value(result.diagnostics),
         "attempt_history": json_value(history),
@@ -55,6 +69,7 @@ def describe_result(result):
             "width": plan.mask.width, "height": plan.mask.height,
             "scale": plan.actual_scale, "attempts": plan.attempt_count,
         } if plan else None,
+        "font_id": plan.mask.font_metrics.font_id if plan else None,
         "code_fill_ratio": rendered.token_coverage if rendered else None,
         "code_fill_warning": LOW_CODE_FILL_WARNING if rendered and rendered.token_coverage < 0.10 else None,
         "coverage": {

@@ -5,10 +5,12 @@ from threading import Event
 from time import monotonic
 
 from .contracts import (
+    CheckStatus,
     Diagnostic,
     ErrorCode,
     GenerationRequest,
     GenerationResult,
+    GenerationStatus,
     PipelineDeps,
     PipelineError,
     RunContext,
@@ -89,4 +91,24 @@ def generate(
         result.diagnostics.append(Diagnostic(
             ErrorCode.INTERNAL_ERROR, stage, f"{type(exc).__name__}: {exc}"
         ))
+    result.status = _final_status(result)
     return result
+
+
+def _final_status(result: GenerationResult) -> GenerationStatus:
+    """Map diagnostics and verification FAILs onto the top-level status."""
+    if any(item.code == ErrorCode.CANCELLED for item in result.diagnostics):
+        return GenerationStatus.CANCELLED
+    if result.diagnostics:
+        return GenerationStatus.FAILED
+    if result.verification is not None:
+        required = (
+            result.verification.token_status,
+            result.verification.geometry_status,
+            result.verification.compile_status,
+        )
+        if any(status != CheckStatus.PASS for status in required):
+            return GenerationStatus.FAILED
+        if result.verification.behavior_status == CheckStatus.FAIL:
+            return GenerationStatus.FAILED
+    return GenerationStatus.OK

@@ -35,10 +35,9 @@ python -m pytest -q
 
 ## 当前状态
 
-main 的 `b38b92b` 基线已通过 284 项测试、18 份固定尺寸输出、
-144 次行为对照，以及猫头 1×、2×、4× 检查。后续提交以对应 CI 和带版本
-锚点的报告为准。[main@b38b92b 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42638059173/job/129231395916)
-也已通过全部 284 项测试（21.70 秒）；这次 CI 未运行正式验收矩阵。
+当前 main `e1ab318` 已通过 317 项测试、18 份固定尺寸输出、144 次行为对照，
+以及猫头 1×、2×、4× 检查。[main@e1ab318 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42831752108)
+也已通过全量套件；这次 CI 未运行正式验收矩阵。
 
 | 项目 | 状态 | 说明 |
 | --- | --- | --- |
@@ -127,7 +126,7 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 ## CI
 
 当前 CI 采用 #27 已合并的配置：Ubuntu 使用 ubuntu-latest、Python 3.12、
-系统 Clang 和 pip 提供的 libclang 18.1.1。全量任务检查依赖导入、记录环境、
+固定 clang-18 和 pip 提供的 libclang 18.1.1。全量任务检查依赖导入、记录环境、
 检查前端脚本语法和测试数量，再运行完整测试套件。
 正式验收需另行运行上面的 `scripts.run_verification` 命令；当前 CI 不自动
 生成或上传正式验收报告。已有验收证据请按报告中的 commit 核对。
@@ -145,6 +144,12 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 添加 `macos-ci` 标签。也可以在 Actions 中手动运行 Python tests，一次运行
 两个平台。macOS 运行器容量不足可能延迟附加检查。
 同一 PR 的新事件会取消旧运行。PR 应写明实际命令、测试结果和环境版本。
+
+## 参考资料
+
+创意背景（IOCCC、donut.c）、GCC/Clang 词法参考、Roboto Mono 字体与 OFL、
+运行/测试依赖见 [docs/references.md](docs/references.md)。donut.c 只作为
+“源码排版成图形”的创意来源，未复用其代码、数学或渲染方式。
 
 ## Clang 与 libclang 排错
 

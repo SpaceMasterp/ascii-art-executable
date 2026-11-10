@@ -8,7 +8,7 @@ import sys
 import pytest
 
 from codeart.presentation import describe_result
-from codeart.contracts import Diagnostic, ErrorCode, GenerationResult
+from codeart.contracts import CheckStatus, Diagnostic, ErrorCode, GenerationResult, VerificationReport
 
 
 def test_cli_real_sample_source_and_report(tmp_path):
@@ -20,12 +20,10 @@ def test_cli_real_sample_source_and_report(tmp_path):
     ]
     # macOS occasionally needs more than the plan's 2 s behavior batch budget
     # for the first execution of a freshly linked binary. Retry only that
-    # pre-existing flake; the product budget and the checks are unchanged.
-    for attempt in range(2):
+    # pre-existing flake, at most twice; the product budget and checks are unchanged.
+    for _ in range(3):
         result = subprocess.run(command, capture_output=True, text=True, timeout=35)
         if result.returncode == 0 or "EXECUTION_TIMEOUT" not in result.stderr:
-            break
-        if attempt:
             break
     assert result.returncode == 0, result.stderr
     report = json.loads(report_path.read_text())
@@ -34,6 +32,17 @@ def test_cli_real_sample_source_and_report(tmp_path):
     assert report["layout"]["scale"] == 1.5
     assert output.read_bytes() == report["source_text"].encode()
     assert output.read_bytes().endswith(b"\n")
+
+
+def test_cli_skipped_required_check_returns_nonzero(monkeypatch):
+    import codeart.cli as cli
+    result = GenerationResult(verification=VerificationReport(
+        token_status=CheckStatus.PASS,
+        geometry_status=CheckStatus.PASS,
+        compile_status=CheckStatus.NOT_RUN,
+    ))
+    monkeypatch.setattr(cli, "generate", lambda *args, **kwargs: result)
+    assert cli.main(["--sample", "max2"]) == 1
 
 
 @pytest.mark.parametrize(("option", "alias"), [

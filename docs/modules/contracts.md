@@ -64,6 +64,16 @@ extension; the v1.4 acceptance path is unchanged. The
 prepass result is attached to CLI/web reports as `prepass`; it is not part of
 `GenerationRequest`/`GenerationResult` contracts.
 
+## Generation result status
+
+`GenerationResult.status` is `OK`, `FAILED` or `CANCELLED`. `generate()` sets it
+after the stage run from the collected diagnostics and the four verification
+statuses; `CANCELLED` takes precedence. Token, geometry and compilation must be
+`PASS`; behavior may be `NOT_RUN` (the allowed `NO_FIXTURE`/`OUTPUT_TOO_LARGE`
+skips), while behavior `FAIL` maps to `FAILED`. `status` stays after the
+existing fields so the old positional constructor remains valid. `presentation.describe_result` exposes the same value as `status`,
+so the CLI, web result and downloaded report use one top-level decision.
+
 ## Errors, time budgets and cancellation
 
 Each stage receives the same `RunContext`. Check `ctx.check()` in long

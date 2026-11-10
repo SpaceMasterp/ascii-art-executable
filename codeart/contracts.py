@@ -17,6 +17,12 @@ class CheckStatus(str, Enum):
     NOT_RUN = "NOT_RUN"
 
 
+class GenerationStatus(str, Enum):
+    OK = "OK"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
 class ErrorCode(str, Enum):
     INVALID_SOURCE = "INVALID_SOURCE"
     UNSUPPORTED_SOURCE = "UNSUPPORTED_SOURCE"
@@ -276,6 +282,27 @@ class GenerationResult:
     rendered: RenderedCode | None = None
     verification: VerificationReport | None = None
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    status: GenerationStatus = GenerationStatus.OK
+
+    def __post_init__(self) -> None:
+        if self.status != GenerationStatus.OK:
+            return
+        if self.diagnostics:
+            if any(item.code == ErrorCode.CANCELLED for item in self.diagnostics):
+                self.status = GenerationStatus.CANCELLED
+            else:
+                self.status = GenerationStatus.FAILED
+            return
+        if self.verification is not None:
+            required = (
+                self.verification.token_status,
+                self.verification.geometry_status,
+                self.verification.compile_status,
+            )
+            if any(status != CheckStatus.PASS for status in required):
+                self.status = GenerationStatus.FAILED
+            elif self.verification.behavior_status == CheckStatus.FAIL:
+                self.status = GenerationStatus.FAILED
 
 
 class Analyzer(Protocol):
