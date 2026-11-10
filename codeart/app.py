@@ -12,6 +12,8 @@ from uuid import uuid4
 from .contracts import Diagnostic, ErrorCode, GenerationRequest, GenerationResult, LayoutOptions, ShapeSpec
 from .environment import environment_info, revision_info
 from .pipeline import generate
+from .prepass import inspect_file, selected_source
+from .presentation import json_value
 from .presentation import artifact_name, describe_result
 from .verification_fixtures import BUILTIN_FIXTURES, select_builtin
 
@@ -61,7 +63,7 @@ class Jobs:
         self.worker = None
         self.revision = revision_info()
 
-    def submit(self, request):
+    def submit(self, request, extraction=None):
         with self.lock:
             if self.active is not None:
                 raise ValueError("A generation is already running. Finish or cancel it first.")
@@ -69,7 +71,7 @@ class Jobs:
                 del self.items[next(iter(self.items))]
             identifier = uuid4().hex
             job = {
-                "id": identifier, "state": "running", "request": request,
+                "id": identifier, "state": "running", "request": request, "prepass": extraction,
                 "cancel": Event(), "result": None, "started": monotonic(), "elapsed_s": None,
             }
             self.items[identifier] = job
@@ -110,7 +112,7 @@ class Jobs:
                 "shape": job["request"].shape_spec.kind,
                 "scale": job["request"].layout_options.initial_scale,
                 "sample": job["request"].fixtures.fixture.name if job["request"].fixtures else None,
-                "result": describe_result(job["result"]) if job["result"] is not None else None,
+                "result": ({**describe_result(job["result"]), "prepass": job["prepass"]} if job["result"] is not None else None),
             }
 
     def cancel(self, identifier):
@@ -188,7 +190,7 @@ def create_server(port=8765, *, runner=generate):
                 else:
                     self.respond(404, {"error": "Unknown generation"})
                 return
-            if path != "/api/generate":
+            if path not in ("/api/generate", "/api/prepass"):
                 self.respond(404, {"error": "Not found"})
                 return
             try:
@@ -197,8 +199,24 @@ def create_server(port=8765, *, runner=generate):
                     raise ValueError("Request must be between 1 byte and 1 MiB")
                 if self.headers.get_content_type() != "application/json":
                     raise ValueError("Expected JSON input")
-                request = make_request(json.loads(self.rfile.read(length)))
-                identifier = jobs.submit(request)
+                data = json.loads(self.rfile.read(length))
+                if not isinstance(data, dict):
+                    raise ValueError("Expected a JSON object")
+                extraction = None
+                if path == "/api/prepass" or data.get("file_mode"):
+                    if not isinstance(data.get("source"), str):
+                        raise ValueError("Expected source text")
+                    extraction = inspect_file(data["source"], data.get("function"))
+                    if path == "/api/prepass":
+                        self.respond(200, json_value(extraction))
+                        return
+                    if extraction.error:
+                        self.respond(400, {"error": extraction.error, "prepass": json_value(extraction)})
+                        return
+                    data["source"] = selected_source(extraction)
+                    data["sample"] = None
+                request = make_request(data)
+                identifier = jobs.submit(request, json_value(extraction))
             except (ValueError, UnicodeError) as exc:
                 self.respond(400, {"error": str(exc)})
                 return

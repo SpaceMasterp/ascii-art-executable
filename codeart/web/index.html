@@ -22,6 +22,8 @@
 <label>INITIAL SCALE<select id="scale"><option value="1">1× · automatic fit</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
 <button class="primary" id="generate" type="submit">Generate artwork <span aria-hidden="true">↗</span></button>
 </fieldset>
+<p>Only the extracted function is verified, not the entire input program.</p>
+<label><input id="file-mode" type="checkbox"> Extract from a complete C file</label> <button id="inspect-file" type="button">Find functions</button> <select id="function"><option value="">First eligible function</option></select><pre id="candidates"></pre>
 <div class="run-status"><p id="status" role="status" aria-live="polite">Choose a sample or paste a complete function to begin.</p><button id="cancel" type="button" hidden>Cancel generation</button></div>
 <section class="workspace" aria-label="Source comparison">
 <div class="editor-panel"><div class="panel-top"><h2><span>01</span> Original source</h2><label class="file-button">Open .c file<input type="file" id="file" accept=".c,text/plain" class="sr-only"></label></div><label for="source" class="sr-only">C11 function source</label><textarea id="source" class="code" spellcheck="false" wrap="off" placeholder="int max2(int a, int b) {&#10;    return a > b ? a : b;&#10;}"></textarea><div class="panel-bottom"><span>C11 · ASCII</span><span id="input-kind">Custom input · behavior check requires a built-in sample</span></div></div>
@@ -35,7 +37,7 @@
 <div class="actions"><a id="download" class="download" hidden>Download .c source <span aria-hidden="true">↓</span></a><a id="report" hidden>Download run report</a><span id="export-note"></span></div>
 <div id="diagnostics" class="diagnostics" hidden></div>
 <details id="attempts"><summary>Layout attempts <span id="attempt-count"></span></summary><div class="table-scroll"><table><thead><tr><th>Scale</th><th>Grid</th><th>Token</th><th>Result</th><th>Seconds</th></tr></thead><tbody id="attempt-rows"></tbody></table></div></details>
-<details><summary>Environment &amp; supported input</summary><p>One self-contained C11 function. Printable ASCII only. External declarations, macros, static local variables and line splicing are unsupported. Custom functions are compiled as object files. Only unchanged built-in samples enter behavior testing.</p><pre id="environment"></pre><p>Preview uses bundled Roboto Mono Regular under the SIL Open Font License. Cell height is twice its character width, matching the generator’s 0.5 cell aspect ratio.</p></details>
+<details><summary>Environment &amp; supported input</summary><p>Generate from one self-contained C11 function, or extract a candidate from a complete file. Eligibility is decided by the source analyzer; dependencies are not copied into the extracted function. Custom functions are compiled as object files. Only unchanged built-in samples enter behavior testing.</p><pre id="environment"></pre><p>Preview uses bundled Roboto Mono Regular under the SIL Open Font License. Cell height is twice its character width, matching the generator’s 0.5 cell aspect ratio.</p></details>
 </section>
 <footer><span>Code Art Studio</span><span>Source → layout → fill → verify</span></footer>
 </main>

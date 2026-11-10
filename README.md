@@ -247,3 +247,33 @@ compiler or library installation; it is not a passing check.
 
 See [F's delivery follow-up](docs/reports/F_delivery.md) and
 [the original completion checklist](docs/reports/F_acceptance.md).
+
+## Complete-file function extraction / 整份文件提取
+
+```sh
+python -m codeart.cli --file example.c --function helper --shape circle --output helper_art.c --report helper_report.json
+```
+
+`--source` retains the single-function mode. `--file` extracts definitions,
+excludes `main`, and runs every candidate through A's real analyzer. Omit
+`--function` to choose the first passing candidate. External typedefs, macros,
+globals and other functions are not copied. Conditional preprocessing regions
+are conservatively rejected; the extractor is not a C preprocessor. Comments
+and literals inside the extracted function are retained; A determines support.
+
+In the web interface, enable **Extract from a complete C file**, click **Find
+functions**, then select a passing candidate. Failed candidates show A's
+original-file diagnostic positions. Generation rechecks the chosen function.
+Only the extracted function is verified, not the entire input program.
+The JSON `prepass` section records candidates, the selection and `ignored_lines`
+with original line ranges and reasons. It does not claim whole-program behavior.
+Custom extractions have no built-in behavior fixture.
+
+`code_fill_ratio` is effective non-space token ink divided by allowed cells
+(the renderer's token coverage), excluding filler comments. Below 10%, CLI and
+web show a suggestion to use a smaller shape; this is not a failed check and
+does not change the layout scale.
+
+整份 `.c` 可包含其它内容，但只有抽出的单个函数参与验证，不代表原程序已通过。
+网页可查看候选及 A 的拒绝原因；报告记录原文件的忽略行区间。中文是否可用仍由
+A 决定。代码占比低于 10% 仅提示，不自动缩小图案；尺寸策略由 C 负责。

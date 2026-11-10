@@ -53,6 +53,8 @@ def describe_result(result):
             "width": plan.mask.width, "height": plan.mask.height,
             "scale": plan.actual_scale, "attempts": plan.attempt_count,
         } if plan else None,
+        "code_fill_ratio": rendered.token_coverage if rendered else None,
+        "code_fill_warning": "Low code fill: consider a smaller shape." if rendered and rendered.token_coverage < 0.10 else None,
         "coverage": {
             "total": rendered.coverage, "token": rendered.token_coverage,
             "comment": rendered.comment_coverage, "comment_cells": rendered.comment_cells,

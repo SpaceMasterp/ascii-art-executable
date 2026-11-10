@@ -12,6 +12,7 @@ async function api(path, options = {}) {
   if (!response.ok) {
     const error = new Error(data.error || "The request failed");
     error.status = response.status;
+    if (data.prepass) byId("candidates").textContent = JSON.stringify(data.prepass, null, 2);
     throw error;
   }
   return data;
@@ -85,6 +86,7 @@ function render(job) {
     ["Grid", layout ? layout.width + " × " + layout.height : "—"],
     ["Actual scale", layout ? layout.scale.toFixed(3) + "×" : "—"],
     ["Attempts", layout ? layout.attempts : result.attempt_history.length],
+    ["Code fill", result.code_fill_ratio == null ? "—" : (result.code_fill_ratio * 100).toFixed(2) + "%"],
     ["Coverage", result.coverage ? (result.coverage.total * 100).toFixed(2) + "%" : "—"],
     ["Elapsed", job.elapsed_s.toFixed(2) + " s"]
   ];
@@ -133,7 +135,7 @@ function render(job) {
   byId("attempt-count").textContent = "(" + result.attempt_history.length + ")";
   const message = result.verified ? (result.checks.behavior.status === "PASS" ? "All four checks passed." : "Token, geometry and compilation passed. Behavior was not run.") : "Generation finished with issues. Review the checks and diagnostics.";
   byId("summary").textContent = result.verified ? "Verified" : "Review required";
-  status(message, !result.verified);
+  status(message + (result.code_fill_warning ? " " + result.code_fill_warning : ""), !result.verified);
 }
 async function poll(identifier) {
   if (active !== identifier) return;
@@ -170,6 +172,7 @@ byId("generator").addEventListener("submit", async event => {
     const response = await api("/api/generate", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({source: byId("source").value, shape: byId("shape").value,
+        file_mode: byId("file-mode").checked, function: byId("function").value || null,
         scale: Number(byId("scale").value), sample: byId("sample").value || null})
     });
     active = response.id;
@@ -193,7 +196,12 @@ byId("cancel").addEventListener("click", async () => {
 });
 byId("sample").addEventListener("change", () => {
   const sample = samples.find(item => item.name === byId("sample").value);
-  if (sample) byId("source").value = sample.source;
+  if (sample) {
+    byId("source").value = sample.source;
+    byId("file-mode").checked = false;
+    byId("function").replaceChildren(new Option("First eligible function", ""));
+    byId("candidates").textContent = "";
+  }
   byId("input-kind").textContent = sample ? "Built-in sample · 8 behavior inputs" : "Custom input · no behavior fixture";
   resetResult();
 });
@@ -209,6 +217,7 @@ byId("file").addEventListener("change", async event => {
   if (!file) return;
   if (file.size > 900000) { status("Choose a source file smaller than 900 KB.", true); return; }
   byId("source").value = await file.text();
+  byId("file-mode").checked = true;
   byId("source").dispatchEvent(new Event("input"));
 });
 showChecks();
@@ -243,3 +252,28 @@ Promise.all([api("/api/samples"), api("/api/environment")]).then(([data, environ
     byId("sample").dispatchEvent(new Event("change"));
   }
 }).catch(error => status(error.message, true));
+
+byId("inspect-file").addEventListener("click", async () => {
+  if (busy) return;
+  byId("inspect-file").disabled = true;
+  try {
+    const data = await api("/api/prepass", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({source: byId("source").value})});
+    byId("file-mode").checked = true;
+    byId("function").replaceChildren();
+    for (const candidate of data.candidates) {
+      const option = document.createElement("option");
+      option.value = candidate.name;
+      option.disabled = candidate.a_status !== "PASS";
+      option.textContent = candidate.name + " · " + candidate.start_line + "–" + candidate.end_line + " · " + candidate.a_status;
+      option.selected = candidate.name === data.selected;
+      byId("function").append(option);
+    }
+    byId("candidates").textContent = JSON.stringify(data.candidates.map(({source_text, ...candidate}) => candidate), null, 2);
+    status(data.error || data.validation_scope, Boolean(data.error));
+  } catch (error) { status(error.message, true); }
+  finally { byId("inspect-file").disabled = false; }
+});
+byId("source").addEventListener("input", () => {
+  byId("function").replaceChildren(new Option("First eligible function", ""));
+  byId("candidates").textContent = "";
+});
