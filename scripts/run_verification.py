@@ -10,6 +10,7 @@ from time import monotonic
 
 from codeart.contracts import GenerationRequest, LayoutOptions, VerificationReport
 from codeart.pipeline import generate
+from codeart.presentation import artifact_name
 from codeart.procutil import WorkStopped
 from codeart.verification_regression import load_cat_references, run_regression
 
@@ -46,15 +47,18 @@ def _run_matrix(output_dir, cat_references):
     matrix = run_regression(generate_case, cat_references=cat_references)
     cases = []
     for case, (result, elapsed_s) in zip(matrix.cases, results, strict=True):
-        mask = result.plan.mask if result.plan is not None else None
+        plan = result.plan
+        mask = plan.mask if plan is not None else None
         issues = list(case.issues)
         filename = None
         if mask is not None and mask.height != HEIGHT:
             issues.append("WRONG_HEIGHT")
         if result.rendered is None:
             issues.append("OUTPUT_MISSING")
-        elif mask is not None:
-            filename = f"case_{case.fixture}_{case.shape}_h{mask.height}.c"
+        elif plan is not None:
+            filename = artifact_name(case.fixture, case.shape, {
+                "height": plan.mask.height, "scale": plan.actual_scale,
+            })
             (output_dir / filename).write_bytes(result.rendered.source_text.encode("utf-8"))
         else:
             issues.append("LAYOUT_MISSING")

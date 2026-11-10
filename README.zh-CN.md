@@ -120,7 +120,7 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 请检查 `report.json` 的 `passed`，它合并固定矩阵和放大检查结果。
 验收命令的退出码目前仅反映固定矩阵。
 
-[验证说明](docs/modules/verify.md)、
+[验证说明](docs/modules/verify.zh-CN.md)、
 [报告目录及自动放大演示](docs/reports/README.md)、
 [F 的后续交付记录](docs/reports/F_delivery.md)。
 
