@@ -59,10 +59,11 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements-dev.txt
-      - name: Install clang
+      - name: Install pinned clang 18
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang
+          sudo apt-get install -y clang-18
+          echo "/usr/lib/llvm-18/bin" >> "$GITHUB_PATH"
       - name: Install pinned dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Require the libclang native library

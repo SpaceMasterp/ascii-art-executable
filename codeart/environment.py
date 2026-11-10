@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 
+from .presentation import FONT_ID
+
 
 def revision_info():
     root = Path(__file__).resolve().parents[1]
@@ -40,7 +42,7 @@ def environment_info():
     return {
         "python": sys.version.split()[0], "platform": platform.platform(),
         "packages": packages, "compiler": compiler, "compiler_version": compiler_version,
-        "font": "Roboto Mono Regular", "cell_aspect": 0.5,
+        "font": FONT_ID, "cell_aspect": 0.5,
         "revision": revision_info(),
     }
 

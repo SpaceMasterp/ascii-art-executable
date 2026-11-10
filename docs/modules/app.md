@@ -67,6 +67,11 @@ the prepass result to the job. The report includes `ignored_lines` and
 precise same-line `ignored_segments`. Only the extracted function is verified;
 `generate()` and A still accept exactly one self-contained function.
 
+Reports include `status` (`OK`/`FAILED`/`CANCELLED`) and the font identity
+taken from `mask.font_metrics.font_id`. A failed `--file` extraction keeps the
+same top-level report shape: `status=FAILED`, `revision`, `prepass` with the
+error, and all four checks `NOT_RUN`.
+
 `code_fill_ratio` is the renderer's token coverage (non-space token ink over
 allowed cells). Below 10%, the UI displays `Token density is low; filler
 comments occupy most allowed cells.` It is informational and does not affect

@@ -17,6 +17,12 @@ class CheckStatus(str, Enum):
     NOT_RUN = "NOT_RUN"
 
 
+class GenerationStatus(str, Enum):
+    OK = "OK"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
 class ErrorCode(str, Enum):
     INVALID_SOURCE = "INVALID_SOURCE"
     UNSUPPORTED_SOURCE = "UNSUPPORTED_SOURCE"
@@ -272,10 +278,18 @@ class GenerationRequest:
 class GenerationResult:
     """Artifacts retained from all stages that returned before the pipeline stopped."""
 
+    status: GenerationStatus = GenerationStatus.OK
     plan: LayoutPlan | None = None
     rendered: RenderedCode | None = None
     verification: VerificationReport | None = None
     diagnostics: list[Diagnostic] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.status == GenerationStatus.OK and self.diagnostics:
+            if any(item.code == ErrorCode.CANCELLED for item in self.diagnostics):
+                self.status = GenerationStatus.CANCELLED
+            else:
+                self.status = GenerationStatus.FAILED
 
 
 class Analyzer(Protocol):

@@ -38,11 +38,10 @@ versions are available in the environment report.
 
 ## Status
 
-The functional baseline at main `b38b92b` passed 284 tests, all 18
-fixed-size cases and 144 behavior comparisons, plus the cat checks at 1x,
-2x and 4x. [The Ubuntu full CI run on main@b38b92b](https://github.com/nukofish/ascii-art-executable/actions/runs/42638059173/job/129231395916)
-also passed all 284 tests (21.70s); that run did not execute production
-acceptance. Later commits have their own CI logs and versioned evidence.
+The current main `e1ab318` passed 317 tests, all 18 fixed-size cases and
+144 behavior comparisons, plus the cat checks at 1x, 2x and 4x. [The Ubuntu
+full CI run on main@e1ab318](https://github.com/nukofish/ascii-art-executable/actions/runs/42831752108)
+also passed the full suite; that run did not execute production acceptance. Later commits have their own CI logs and versioned evidence.
 
 | Check or delivery | Status | Evidence or interpretation |
 | --- | --- | --- |
@@ -211,6 +210,13 @@ export CLANG_LIBRARY_PATH=/usr/lib/llvm-18/lib/libclang.so.1
 Add the label for the C analyzer, the Clang or libclang integration, the browser
 script or the collected test count. Use `macos-ci` when the change can only be
 validated against Apple Clang, such as compiler-flag or Mach-O specific work.
+
+## References
+
+See [docs/references.md](docs/references.md) for the creative background
+(IOCCC, donut.c), the GCC/Clang tokenization references, the bundled Roboto
+Mono font and its OFL license, and the runtime/test dependencies. The donut.c
+entry is inspiration only; no code, math, or rendering path is reused.
 
 ## Clang and libclang troubleshooting
 

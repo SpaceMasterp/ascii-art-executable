@@ -89,6 +89,7 @@ function render(job) {
   byId("export-note").textContent = result.verified ? "LF line endings · UTF-8" : "Review diagnostics before using this output.";
   const layout = result.layout;
   if (layout) byId("dimensions").textContent = layout.width + " × " + layout.height + " CELLS";
+  byId("font-label").textContent = (result.font_id || "—") + " · fixed character grid";
   const metrics = byId("metrics");
   metrics.replaceChildren();
   const values = [

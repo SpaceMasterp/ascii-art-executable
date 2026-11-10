@@ -40,12 +40,38 @@ def test_cli_file_report(tmp_path):
     src.write_text('#include <stdio.h>\nint f(int x){return x+1;}\n')
     assert main(['--file', str(src), '--function', 'f', '--output', str(output), '--report', str(report)]) == 0
     data = json.loads(report.read_text())
+    assert data['status'] == 'OK'
+    assert data['font_id'] == 'Roboto Mono Regular'
     assert data['prepass']['selected'] == 'f'
     assert data['prepass']['ignored_lines'][0]['start_line'] == 1
+    assert data['prepass']['validation_scope']
+    assert data['checks']['token']['status'] == 'PASS'
+    assert data['checks']['geometry']['status'] == 'PASS'
+    assert data['checks']['compile']['status'] == 'PASS'
+    assert data['checks']['behavior']['status'] == 'NOT_RUN'
+    assert data['checks']['behavior']['reason'] == 'NO_FIXTURE'
+    assert data['verification']['behavior_cases_compared'] == 0
     assert data['code_fill_ratio'] == data['coverage']['token']
     assert data['code_fill_ratio'] < 0.1
     assert data['code_fill_warning'] == 'Token density is low; filler comments occupy most allowed cells.'
     assert output.exists()
+
+
+def test_cli_file_failure_report_is_unified(tmp_path):
+    import json
+    from codeart.cli import main
+    src = tmp_path / 'disabled.c'
+    report = tmp_path / 'report.json'
+    src.write_text('#if 0\nint f(void){return 1;}\n#endif\n')
+    assert main(['--file', str(src), '--function', 'f', '--report', str(report)]) == 1
+    data = json.loads(report.read_text())
+    assert data['status'] == 'FAILED'
+    assert 'revision' in data
+    assert data['prepass']['error'] == 'NO_ELIGIBLE_FUNCTION'
+    assert data['diagnostics'] == []
+    for name in ('token', 'geometry', 'compile', 'behavior'):
+        assert data['checks'][name]['status'] == 'NOT_RUN'
+        assert data['checks'][name]['reason'] == 'NO_ELIGIBLE_FUNCTION'
 
 
 def test_web_prepass_endpoint():
@@ -145,7 +171,19 @@ def test_web_file_mode_generates_extracted_function():
             time.sleep(0.02)
         assert job['result']['prepass']['selected'] == 'f'
         assert job['source'] == 'int f(int x){return x+1;}'
+        assert job['result']['status'] == 'OK'
+        assert job['result']['font_id'] == 'Roboto Mono Regular'
         assert job['result']['checks']['token']['status'] == 'PASS'
+        assert job['result']['checks']['geometry']['status'] == 'PASS'
+        assert job['result']['checks']['compile']['status'] == 'PASS'
+        assert job['result']['checks']['behavior']['status'] == 'NOT_RUN'
+        assert job['result']['checks']['behavior']['reason'] == 'NO_FIXTURE'
+        assert job['result']['verification']['behavior_cases_compared'] == 0
+        assert job['result']['prepass']['validation_scope']
+        with urlopen(base + '/api/jobs/' + job_id + '/report.json', timeout=10) as response:
+            report = json.load(response)
+        assert report['result']['status'] == 'OK'
+        assert report['result']['checks']['behavior']['reason'] == 'NO_FIXTURE'
     finally:
         server.shutdown()
         server.server_close()

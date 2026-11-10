@@ -7,6 +7,8 @@ from .contracts import CheckStatus, ErrorCode
 
 CHECKS = ("token", "geometry", "compile", "behavior")
 
+FONT_ID = "Roboto Mono Regular"
+
 LOW_CODE_FILL_WARNING = "Token density is low; filler comments occupy most allowed cells."
 
 
@@ -48,6 +50,7 @@ def describe_result(result):
     )
     return {
         "verified": verified,
+        "status": result.status.value,
         "checks": checks,
         "diagnostics": json_value(result.diagnostics),
         "attempt_history": json_value(history),
@@ -55,6 +58,7 @@ def describe_result(result):
             "width": plan.mask.width, "height": plan.mask.height,
             "scale": plan.actual_scale, "attempts": plan.attempt_count,
         } if plan else None,
+        "font_id": plan.mask.font_metrics.font_id if plan else None,
         "code_fill_ratio": rendered.token_coverage if rendered else None,
         "code_fill_warning": LOW_CODE_FILL_WARNING if rendered and rendered.token_coverage < 0.10 else None,
         "coverage": {

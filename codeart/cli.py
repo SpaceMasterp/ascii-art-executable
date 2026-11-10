@@ -7,13 +7,32 @@ from pathlib import Path
 import sys
 
 from ._integration_demo import DEMO_SOURCE, demo_deps
-from .contracts import CheckStatus, GenerationRequest, ShapeSpec
+from .contracts import CheckStatus, FontMetrics, GenerationRequest, GenerationStatus, ShapeSpec
 from .environment import revision_info
 from .pipeline import generate
 from .prepass import inspect_file, selected_source, SCOPE
 from .presentation import json_value
-from .presentation import CHECKS, LOW_CODE_FILL_WARNING, describe_result
+from .presentation import CHECKS, FONT_ID, LOW_CODE_FILL_WARNING, describe_result
 from .verification_fixtures import BUILTIN_FIXTURES, select_builtin
+
+
+def _prepass_failure_report(extraction):
+    """Keep the same top-level report shape as a successful run."""
+    return {
+        "status": GenerationStatus.FAILED.value,
+        "revision": revision_info(),
+        "checks": {
+            name: {"status": CheckStatus.NOT_RUN.value, "reason": extraction.error}
+            for name in CHECKS
+        },
+        "diagnostics": [],
+        "attempt_history": [],
+        "layout": None,
+        "coverage": None,
+        "source_text": None,
+        "verification": None,
+        "prepass": json_value(extraction),
+    }
 
 
 def main(argv=None) -> int:
@@ -57,7 +76,7 @@ def main(argv=None) -> int:
     if extraction:
         print(SCOPE, file=sys.stderr)
         if extraction.error:
-            data = json_value(extraction)
+            data = _prepass_failure_report(extraction)
             if args.report:
                 try:
                     args.report.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -72,7 +91,10 @@ def main(argv=None) -> int:
     request = GenerationRequest(
         source, ShapeSpec(args.shape, "CODE" if args.shape == "code" else None), fixtures=selection,
     )
-    request = replace(request, layout_options=replace(request.layout_options, initial_scale=args.scale))
+    request = replace(request, layout_options=replace(
+        request.layout_options, initial_scale=args.scale,
+        font_metrics=FontMetrics(font_id=FONT_ID),
+    ))
     result = generate(request, deps=demo_deps() if args.demo else None)
     if args.report:
         try:
@@ -116,11 +138,7 @@ def main(argv=None) -> int:
 
     if args.demo:
         return int(bool(result.diagnostics) or result.rendered is None)
-    if report is None:
-        return 1
-    required = (report.token_status, report.geometry_status, report.compile_status)
-    return int(bool(result.diagnostics) or any(status != CheckStatus.PASS for status in required)
-               or report.behavior_status == CheckStatus.FAIL)
+    return int(result.status != GenerationStatus.OK)
 
 
 if __name__ == "__main__":
