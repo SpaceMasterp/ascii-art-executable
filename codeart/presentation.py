@@ -7,6 +7,8 @@ from .contracts import CheckStatus, ErrorCode
 
 CHECKS = ("token", "geometry", "compile", "behavior")
 
+LOW_CODE_FILL_WARNING = "Token density is low; filler comments occupy most allowed cells."
+
 
 def json_value(value):
     if is_dataclass(value):
@@ -54,7 +56,7 @@ def describe_result(result):
             "scale": plan.actual_scale, "attempts": plan.attempt_count,
         } if plan else None,
         "code_fill_ratio": rendered.token_coverage if rendered else None,
-        "code_fill_warning": "Low code fill: consider a smaller shape." if rendered and rendered.token_coverage < 0.10 else None,
+        "code_fill_warning": LOW_CODE_FILL_WARNING if rendered and rendered.token_coverage < 0.10 else None,
         "coverage": {
             "total": rendered.coverage, "token": rendered.token_coverage,
             "comment": rendered.comment_coverage, "comment_cells": rendered.comment_cells,

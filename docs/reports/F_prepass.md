@@ -1,6 +1,6 @@
 # Part F complete-file entry and code-fill indicator
 
-Base: main@8b9f9e8. Review code commit: b244984. This is an optional
+Base: main@8b9f9e8. Review commits: b244984 (core fixes), d6c465c (test flake), 3b59da0 (macro masking), plus the neutral-note follow-up. This is an optional
 F-layer entry; it does not change A's contract, `generate()`'s single-function
 input, or C's sizing.
 
@@ -11,7 +11,7 @@ input, or C's sizing.
 - Locator fixes: comments/literals are masked before locating braces, so a `#if`/`#endif` inside a comment or macro body is ignored. CRLF/lone CR is normalised and a leading UTF-8 BOM is stripped. Function-pointer and parenthesised declarators are named by A's `function_name`.
 - Validation scope: the extracted function only, not the entire original program. Custom extractions do not acquire built-in behavior fixtures.
 - Audit: JSON prepass includes exact extracted text, original line ranges, rejection diagnostics, selection, ignored line intervals and precise `ignored_segments` for same-line prefixes/suffixes.
-- Indicator: `code_fill_ratio` uses D's non-space token ink / allowed cells, excluding filler comments. Below 10%, an informational hint suggests a smaller shape; it does not fail verification or change layout.
+- Indicator: `code_fill_ratio` uses D's non-space token ink / allowed cells, excluding filler comments. Below 10%, it displays `Token density is low; filler comments occupy most allowed cells.`; it does not fail verification, change layout or recommend a size.
 
 Regression coverage uses real A: external global rejection and original
 locations, definitions versus declarations, comment/literal brace handling,
@@ -29,7 +29,7 @@ loopback policy and body limit.
 
 | Command | Result |
 | --- | --- |
-| `python -m pytest -q` | **315 passed** (20.07 s on the final run) |
+| `python -m pytest -q` | **317 passed** (29.30 s on the final run) |
 | `python -m scripts.run_verification --output-dir <new-dir>` | **144/144 comparisons**; cat 1x/2x/4x PASS |
 | `node --check codeart/web/app.js` | pass |
 | `git diff --check` | pass |
@@ -40,5 +40,6 @@ retries once only for that pre-existing `EXECUTION_TIMEOUT`; the product
 budget and the checks are unchanged. Three consecutive full-suite runs passed
 after the retry.
 
-Follow-up review: restored the agreed low-fill hint and masked complete macro
-continuations so their bodies cannot become selectable definitions.
+Follow-up review: masked complete macro continuations so their bodies cannot
+become selectable definitions, and replaced the low-fill hint with a neutral
+density note for all three shapes.

@@ -289,4 +289,5 @@ Only the extracted function is verified, not the entire input program.
 `code_fill_ratio` is effective non-space token ink divided by allowed cells
 (the renderer's token coverage), excluding filler comments. It is
 informational only: it does not affect verification or layout. Below 10%,
-it suggests considering a smaller shape without automatically changing size.
+it displays `Token density is low; filler comments occupy most allowed cells.`
+It gives no size advice.

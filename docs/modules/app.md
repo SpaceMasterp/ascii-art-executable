@@ -68,8 +68,9 @@ precise same-line `ignored_segments`. Only the extracted function is verified;
 `generate()` and A still accept exactly one self-contained function.
 
 `code_fill_ratio` is the renderer's token coverage (non-space token ink over
-allowed cells). It is informational and does not affect checks, layout or
-size.
+allowed cells). Below 10%, the UI displays `Token density is low; filler
+comments occupy most allowed cells.` It is informational and does not affect
+checks, layout or size.
 
 ## Font
 

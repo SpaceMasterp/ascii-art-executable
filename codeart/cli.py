@@ -12,7 +12,7 @@ from .environment import revision_info
 from .pipeline import generate
 from .prepass import inspect_file, selected_source, SCOPE
 from .presentation import json_value
-from .presentation import CHECKS, describe_result
+from .presentation import CHECKS, LOW_CODE_FILL_WARNING, describe_result
 from .verification_fixtures import BUILTIN_FIXTURES, select_builtin
 
 
@@ -91,7 +91,7 @@ def main(argv=None) -> int:
     if result.rendered is not None:
         print(f"coverage={result.rendered.coverage:.2%}; code_fill_ratio={result.rendered.token_coverage:.2%}", file=sys.stderr)
     if result.rendered is not None and result.rendered.token_coverage < 0.10:
-        print("Low code fill: consider a smaller shape.", file=sys.stderr)
+        print(LOW_CODE_FILL_WARNING, file=sys.stderr)
     report = result.verification
     for name in CHECKS:
         status = getattr(report, f"{name}_status", CheckStatus.NOT_RUN)

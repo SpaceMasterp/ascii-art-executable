@@ -207,4 +207,6 @@ UTF-8 BOM。`main` 和条件编译区域里的函数不合格。省略 `--functi
 选中的函数。只验证抽出的函数，不代表原程序已验证。
 
 `code_fill_ratio` 是有效非空白 token 墨迹除以可填格数（即渲染器的 token
-覆盖率），不计填充注释。低于 10% 时提示考虑更小的图案，不影响验证或布局，也不自动调整尺寸。
+覆盖率），不计填充注释。低于 10% 时显示
+`Token density is low; filler comments occupy most allowed cells.`，只作信息提示，
+不影响验证或布局，也不给出尺寸建议。

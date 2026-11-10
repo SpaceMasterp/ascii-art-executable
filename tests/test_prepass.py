@@ -44,7 +44,7 @@ def test_cli_file_report(tmp_path):
     assert data['prepass']['ignored_lines'][0]['start_line'] == 1
     assert data['code_fill_ratio'] == data['coverage']['token']
     assert data['code_fill_ratio'] < 0.1
-    assert data['code_fill_warning']
+    assert data['code_fill_warning'] == 'Token density is low; filler comments occupy most allowed cells.'
     assert output.exists()
 
 
@@ -158,3 +158,17 @@ def test_macro_continuation_is_not_a_function_definition():
     result = inspect_file(text)
     assert [c.name for c in result.candidates] == ['real']
     assert result.selected == 'real'
+
+def test_code_fill_note_is_neutral_and_uses_the_ten_percent_threshold():
+    from codeart.contracts import GenerationResult, RenderedCode
+    from codeart.presentation import LOW_CODE_FILL_WARNING, describe_result
+
+    def report_for(ratio):
+        rendered = RenderedCode("", {}, 0.99, ratio, 0.99 - ratio, {"block": 0, "line": 0})
+        return describe_result(GenerationResult(rendered=rendered))
+
+    low = report_for(0.09)
+    high = report_for(0.10)
+    assert low["code_fill_warning"] == LOW_CODE_FILL_WARNING
+    assert "smaller shape" not in low["code_fill_warning"]
+    assert high["code_fill_warning"] is None
