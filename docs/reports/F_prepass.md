@@ -1,6 +1,6 @@
 # Part F complete-file entry and code-fill indicator
 
-Base: main@8b9f9e8, plus the review fixes on this branch. This is an optional
+Base: main@8b9f9e8. Review code commit: b244984. This is an optional
 F-layer entry; it does not change A's contract, `generate()`'s single-function
 input, or C's sizing.
 
