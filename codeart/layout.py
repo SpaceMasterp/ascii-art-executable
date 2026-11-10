@@ -178,7 +178,7 @@ def _with_history(exc: StageError, history) -> StageError:
     details["attempt_history"] = tuple(history)
     return StageError(Diagnostic(
         diagnostic.code, diagnostic.stage, diagnostic.message,
-        diagnostic.line, diagnostic.column, details,
+        diagnostic.line, diagnostic.column, details, diagnostic.location,
     ))
 
 

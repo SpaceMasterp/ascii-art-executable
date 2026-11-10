@@ -22,14 +22,31 @@ mask = build_mask(
 
 | type | fields |
 |---|---|
-| `FontMetrics` | `cell_aspect: float = 0.5` (cell width px / cell height px) |
+| `FontMetrics` | `font_id: str \| None = None`, `cell_width_px: float \| None = None`, `cell_height_px: float \| None = None`; `cell_aspect` is a **derived property** (see below) |
 | `SizeRequest` | `height_rows: int` |
-| `ShapeSpec` | `kind: str`, `text: str \| None`, `font_id: str \| None`, `inner_radius: float \| None` |
-| `Mask` | `kind`, `width`, `height`, `allowed[row][col]`, `spans[row]`, `scale`, `font_metrics`, `features`, `inner_radius` |
+| `ShapeSpec` | `kind: str`, `text: str \| None`, `inner_radius: float \| None` |
+| `Mask` | `kind`, `width`, `height`, `allowed[row][col]`, `spans[row]`, `font_metrics`, `features`, `inner_radius`; `scale` is a **derived property** |
 
 `ctx` is an optional cancellation context: if it exposes `raise_if_cancelled()`
 or `check()`, that hook is called once per row (duck typing — no dependency on
 F's `contracts.py`).
+
+### Cell metrics and `cell_aspect`
+
+`FontMetrics` stores the font identity and the optional cell pixel size; the
+ratio C uses is **derived** from them and is never a second authority:
+
+| construction | `cell_aspect` |
+|---|---|
+| `FontMetrics()` | `0.5` (project default) |
+| `FontMetrics(0.5)` / `FontMetrics(cell_aspect=0.5)` | `0.5` — the same metrics as `FontMetrics()` |
+| `FontMetrics(font_id="mono", cell_width_px=8, cell_height_px=16)` | `8 / 16 = 0.5` |
+
+`cell_aspect` stays the first parameter, so `FontMetrics(0.5)` keeps working;
+`font_id` and the cell pixel size are keyword-only. The project fixes the ratio
+at `CELL_ASPECT_DEFAULT = 0.5`, so both an explicit `cell_aspect` and a pixel
+pair are accepted only within `CELL_ASPECT_TOLERANCE = 1e-9` of it; anything
+else raises `INVALID_SHAPE` when the metrics are constructed.
 
 ### Sizing
 
@@ -40,8 +57,12 @@ columns = ceil(height_rows × r / cell_aspect)
 ```
 
 With `cell_aspect = 0.5`, a shape with `r = 1.0` at 32 rows is 64 columns wide
-(physical width `64 × 0.5 = 32` equals the height). `scale = height_rows / 2`
-is the number of rows per shape unit (the shape is normalised to `v ∈ [-1, 1]`).
+(physical width `64 × 0.5 = 32` equals the height).
+
+`Mask.scale` is not stored: it is a read-only property equal to `height / 2`,
+the number of rows per shape unit (the shape is normalised to `v ∈ [-1, 1]`).
+It is **derived, not authoritative** — `width` and `height` are the only size
+authorities on `Mask`, so the two can never disagree.
 
 | kind | r | 32 rows | 64 rows |
 |---|---|---|---|
@@ -251,19 +272,46 @@ cells must exceed `area_limit`.
 
 ## Errors
 
-`ShapeError` subclasses `ValueError` and carries a stable `code`:
+`build_mask` raises the shared `PipelineError` from `codeart.contracts`, always
+with `stage="shape"` and a `Diagnostic(code, stage, message, location=...)`:
+
+```python
+from codeart import ErrorCode, PipelineError
+
+try:
+    build_mask(ShapeSpec("circle"), SizeRequest(0), FontMetrics())
+except PipelineError as exc:
+    assert exc.diagnostic.code is ErrorCode.INVALID_SIZE
+    assert exc.diagnostic.stage == "shape"
+    assert exc.diagnostic.location == "SizeRequest.height_rows"
+```
+
+`ShapeError` is kept as a synonym of `PipelineError`
+(`ShapeError is PipelineError`), so `except ShapeError` and `except StageError`
+keep catching B's failures; `exc.code` still returns the plain string code for
+compatibility. `diagnostic.location` names the request field or produced
+artifact the failure refers to — shape failures have no source line.
 
 | code | when |
 |---|---|
-| `INVALID_SHAPE` | unknown `kind`, `text != "CODE"`, or `inner_radius is not None` (rings are not supported yet) |
-| `INVALID_SIZE` | `height_rows` not a positive int, or `cell_aspect` not positive |
+| `INVALID_SHAPE` | unknown `kind`; `text != "CODE"`; `inner_radius is not None` (rings are not supported yet); a `cell_aspect` or cell pixel pair that is not `0.5`; a mask with no fillable cell |
+| `INVALID_SIZE` | `height_rows` not a positive int; a malformed cell metric (`cell_aspect`, `cell_width_px` or `cell_height_px` non-finite or `≤ 0`, or a width without a height) |
+
+### Empty-mask guard
+
+`build_mask` validates the grid before returning it. If no cell is allowed —
+which also means every row has zero spans — it raises
+`PipelineError(INVALID_SHAPE)` with `location="Mask.allowed"` instead of
+handing C a canvas it could never fill.
 
 ## Running the tests
 
 ```bash
-python -m pytest tests/test_shapes.py -q     # 17 passed
+python -m pytest tests/test_shapes.py -q     # 35 passed
 ```
 
 The suite covers all three shapes at 32 and 64 rows, span reconstruction,
 holes-not-allowed, multi-span rows, the acceptance metrics above, determinism,
-error codes, the `ctx` duck-typing hook and the fixture regression.
+the derived `cell_aspect`/`scale` contracts, the `INVALID_SHAPE` /
+`INVALID_SIZE` error codes, the empty-mask guard, the `ctx` duck-typing hook
+and the fixture regression.

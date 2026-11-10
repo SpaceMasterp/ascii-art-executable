@@ -63,7 +63,7 @@ def rect_mask(width, height=3):
     spans = tuple(((0, width),) for _ in range(height))
     return Mask(
         kind="rect", width=width, height=height, allowed=allowed, spans=spans,
-        scale=1.0, font_metrics=FontMetrics(),
+        font_metrics=FontMetrics(),
     )
 
 

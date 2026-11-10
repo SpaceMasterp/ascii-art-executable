@@ -21,13 +21,27 @@ mask = build_mask(
 
 | 类型 | 字段 |
 |---|---|
-| `FontMetrics` | `cell_aspect: float = 0.5`（字符宽 / 字符高，单位 px） |
+| `FontMetrics` | `font_id: str \| None = None`、`cell_width_px: float \| None = None`、`cell_height_px: float \| None = None`；`cell_aspect` 是**推导出来的 property**（见下） |
 | `SizeRequest` | `height_rows: int` |
-| `ShapeSpec` | `kind: str`、`text: str \| None`、`font_id: str \| None`、`inner_radius: float \| None` |
-| `Mask` | `kind`、`width`、`height`、`allowed[row][col]`、`spans[row]`、`scale`、`font_metrics`、`features`、`inner_radius` |
+| `ShapeSpec` | `kind: str`、`text: str \| None`、`inner_radius: float \| None` |
+| `Mask` | `kind`、`width`、`height`、`allowed[row][col]`、`spans[row]`、`font_metrics`、`features`、`inner_radius`；`scale` 是**推导出来的 property** |
 
 `ctx` 是可选的取消上下文：若提供且带 `raise_if_cancelled()` 或 `check()`，每生成一行调用一次
 （鸭子类型，不硬依赖 F 的 `contracts.py`）。
+
+### 字符度量与 `cell_aspect`
+
+`FontMetrics` 存的是字体身份与可选的字符像素尺寸，C 用的宽高比由它们**推导**，不构成第二个权威：
+
+| 构造方式 | `cell_aspect` |
+|---|---|
+| `FontMetrics()` | `0.5`（项目默认值） |
+| `FontMetrics(0.5)` / `FontMetrics(cell_aspect=0.5)` | `0.5`——与 `FontMetrics()` 完全等价 |
+| `FontMetrics(font_id="mono", cell_width_px=8, cell_height_px=16)` | `8 / 16 = 0.5` |
+
+`cell_aspect` 仍是第一个参数，所以 `FontMetrics(0.5)` 继续可用；`font_id` 与字符像素尺寸是
+关键字参数。项目把该比值固定为 `CELL_ASPECT_DEFAULT = 0.5`：显式 `cell_aspect` 或像素宽高对
+只有落在 `CELL_ASPECT_TOLERANCE = 1e-9` 之内才被接受，否则在构造时就抛 `INVALID_SHAPE`。
 
 ### 尺寸
 
@@ -38,7 +52,10 @@ columns = ceil(height_rows × r / cell_aspect)
 ```
 
 `cell_aspect = 0.5` 时，`r = 1.0` 的图案在 32 行下是 64 列（物理宽 `64 × 0.5 = 32`，与高相等）。
-`scale = height_rows / 2` 表示"每个图案单位占多少行"（图案归一化到 `v ∈ [-1, 1]`）。
+
+`Mask.scale` 不是字段：它是只读 property，等于 `height / 2`，即"每个图案单位占多少行"
+（图案归一化到 `v ∈ [-1, 1]`）。它是 **derived, not authoritative**——`Mask` 上唯一的尺寸权威
+是 `width` 与 `height`，因此两者不可能互相矛盾。
 
 | 图案 | r | 32 行 | 64 行 |
 |---|---|---|---|
@@ -222,18 +239,40 @@ assert abs(got - expected) <= limit  # 371 vs 387，limit 78.7
 
 ## 错误码
 
-`ShapeError` 继承 `ValueError`，带稳定字段 `code`：
+`build_mask` 抛共享的 `PipelineError`（`codeart.contracts`），`stage` 恒为 `shape`，
+并带 `Diagnostic(code, stage, message, location=...)`：
+
+```python
+from codeart import ErrorCode, PipelineError
+
+try:
+    build_mask(ShapeSpec("circle"), SizeRequest(0), FontMetrics())
+except PipelineError as exc:
+    assert exc.diagnostic.code is ErrorCode.INVALID_SIZE
+    assert exc.diagnostic.stage == "shape"
+    assert exc.diagnostic.location == "SizeRequest.height_rows"
+```
+
+`ShapeError` 保留为 `PipelineError` 的**同义别名**（`ShapeError is PipelineError`），
+所以 `except ShapeError` 与 `except StageError` 都还能接住 B 的失败；`exc.code` 仍返回纯字符串
+错误码以兼容旧调用方。`diagnostic.location` 指出出错的请求字段或产出物——图案错误没有源码行号。
 
 | code | 触发条件 |
 |---|---|
-| `INVALID_SHAPE` | 未知 `kind`、`text != "CODE"`、`inner_radius` 非 `None`（暂不支持环形） |
-| `INVALID_SIZE` | `height_rows` 不是正整数，或 `cell_aspect` 非正 |
+| `INVALID_SHAPE` | 未知 `kind`；`text != "CODE"`；`inner_radius` 非 `None`（暂不支持环形）；`cell_aspect` 或字符像素宽高比不为 `0.5`；生成的 mask 没有任何可填格 |
+| `INVALID_SIZE` | `height_rows` 不是正整数；字符度量非法（`cell_aspect`、`cell_width_px`、`cell_height_px` 非有限值或 `≤ 0`，或只给了宽没给高） |
+
+### 空 mask 守卫
+
+`build_mask` 返回前会校验网格：如果没有任何可填格（等价于每一行的 spans 都为空），直接抛
+`PipelineError(INVALID_SHAPE)`，`location="Mask.allowed"`，而不是把一个永远填不满的画布交给 C。
 
 ## 跑测试
 
 ```bash
-python -m pytest tests/test_shapes.py -q     # 17 passed
+python -m pytest tests/test_shapes.py -q     # 35 passed
 ```
 
 覆盖：三种图案在 32/64 行生成、spans 重建一致性、孔洞不可填、多区间行、上面的验收指标、
-确定性、错误码、`ctx` 鸭子类型钩子，以及 fixture 回归。
+确定性、`cell_aspect`/`scale` 的推导契约、`INVALID_SHAPE` / `INVALID_SIZE` 错误码、空 mask 守卫、
+`ctx` 鸭子类型钩子，以及 fixture 回归。

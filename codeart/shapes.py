@@ -37,6 +37,7 @@ from typing import Iterable, Mapping, Sequence
 
 __all__ = [
     "CELL_ASPECT_DEFAULT",
+    "CELL_ASPECT_TOLERANCE",
     "FontMetrics",
     "Mask",
     "ShapeError",
@@ -49,7 +50,24 @@ __all__ = [
 #: Fixed cell aspect ratio: ``cell_width_px / cell_height_px`` (see plan v1.4).
 CELL_ASPECT_DEFAULT = 0.5
 
+#: Absolute tolerance accepted for a caller-supplied cell aspect ratio.
+CELL_ASPECT_TOLERANCE = 1e-9
+
+#: Normalised units spanned by the full mask height (``v ∈ [-1, 1]``).
+_SHAPE_V_SPAN = 2.0
+
 _SHAPE_KINDS = ("circle", "cat", "code")
+
+
+def _error(code: ErrorCode, message: str, location: str | None = None) -> PipelineError:
+    """Build B's diagnosed failure.
+
+    ``Diagnostic``/``ErrorCode``/``PipelineError`` are imported at the end of
+    this module (``codeart.contracts`` re-exports B's types, so the import only
+    works once those types exist); they are resolved at call time.
+    """
+    return PipelineError(Diagnostic(code, "shape", message, location=location))
+
 
 # ---------------------------------------------------------------------------
 # built-in 5x7 bitmap font for the hollow CODE shape ('#' = stroke, '.' = gap)
@@ -108,36 +126,99 @@ CODE_UNITS_H = _GLYPH_MARGIN * 2 + _GLYPH_H
 # ---------------------------------------------------------------------------
 
 
-class ShapeError(ValueError):
-    """Raised when a shape request cannot be honoured.
+def _validate_cell_metrics(
+    cell_aspect: float | None,
+    cell_width_px: float | None,
+    cell_height_px: float | None,
+) -> None:
+    """Reject a cell metric set the project cannot honour.
 
-    ``code`` is a stable machine-readable string (``INVALID_SHAPE`` or
-    ``INVALID_SIZE``) so callers can map errors without parsing messages.
+    The project fixes ``cell_width_px / cell_height_px`` at
+    :data:`CELL_ASPECT_DEFAULT`, so both an explicit ``cell_aspect`` and a
+    width/height pair are accepted only when they resolve to that value within
+    :data:`CELL_ASPECT_TOLERANCE`.
     """
 
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(f"{code}: {message}")
-        self.code = code
-        self.message = message
+    def positive(source: str, value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                or not math.isfinite(value):
+            raise _error(
+                ErrorCode.INVALID_SIZE,
+                f"{source} must be a finite number, got {value!r}",
+                f"FontMetrics.{source}")
+        if value <= 0:
+            raise _error(
+                ErrorCode.INVALID_SIZE,
+                f"{source} must be positive, got {value!r}",
+                f"FontMetrics.{source}")
+        return float(value)
+
+    if (cell_width_px is None) != (cell_height_px is None):
+        raise _error(
+            ErrorCode.INVALID_SIZE,
+            "cell_width_px and cell_height_px must be given together",
+            "FontMetrics.cell_width_px")
+
+    ratios: list[tuple[str, float]] = []
+    if cell_aspect is not None:
+        ratios.append(("cell_aspect", positive("cell_aspect", cell_aspect)))
+    if cell_width_px is not None:
+        width = positive("cell_width_px", cell_width_px)
+        height = positive("cell_height_px", cell_height_px)
+        ratios.append(("cell_width_px / cell_height_px", width / height))
+
+    for source, ratio in ratios:
+        if not math.isclose(ratio, CELL_ASPECT_DEFAULT,
+                            rel_tol=0.0, abs_tol=CELL_ASPECT_TOLERANCE):
+            raise _error(
+                ErrorCode.INVALID_SHAPE,
+                f"{source} must be {CELL_ASPECT_DEFAULT} for this project, "
+                f"got {ratio!r}",
+                "FontMetrics.cell_aspect")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class FontMetrics:
     """Metrics of the target font/cell.
 
-    ``cell_aspect`` is ``cell_width_px / cell_height_px`` and is fixed to 0.5
-    for the project (a monospace cell is twice as tall as it is wide).
+    ``cell_aspect`` (``cell_width_px / cell_height_px``) is **derived**, never
+    an independent field. The project fixes the ratio at
+    :data:`CELL_ASPECT_DEFAULT` (a monospace cell is twice as tall as it is
+    wide), so
+
+    * ``FontMetrics()`` and ``FontMetrics(0.5)`` describe the same metrics;
+    * ``FontMetrics(cell_width_px=8, cell_height_px=16)`` derives ``0.5`` from
+      the pixel size;
+    * any ratio other than that fixed value raises
+      ``PipelineError(INVALID_SHAPE)`` when the metrics are constructed.
+
+    ``cell_aspect`` stays the first parameter so ``FontMetrics(0.5)`` keeps
+    working; ``font_id`` and the cell pixel size are keyword-only.
     """
 
-    cell_aspect: float = CELL_ASPECT_DEFAULT
+    font_id: str | None = None
+    cell_width_px: float | None = None
+    cell_height_px: float | None = None
 
-    def __post_init__(self) -> None:
-        if not isinstance(self.cell_aspect, (int, float)) or isinstance(
-                self.cell_aspect, bool) or not self.cell_aspect > 0:
-            raise ShapeError(
-                "INVALID_SIZE",
-                f"cell_aspect must be a positive number, got "
-                f"{self.cell_aspect!r}")
+    def __init__(
+        self,
+        cell_aspect: float | None = None,
+        *,
+        font_id: str | None = None,
+        cell_width_px: float | None = None,
+        cell_height_px: float | None = None,
+    ) -> None:
+        _validate_cell_metrics(cell_aspect, cell_width_px, cell_height_px)
+        object.__setattr__(self, "font_id", font_id)
+        object.__setattr__(self, "cell_width_px", cell_width_px)
+        object.__setattr__(self, "cell_height_px", cell_height_px)
+
+    @property
+    def cell_aspect(self) -> float:
+        """Derived cell width / cell height; fixed at 0.5 for the project."""
+        if self.cell_width_px is not None and self.cell_height_px is not None:
+            return self.cell_width_px / self.cell_height_px
+        return CELL_ASPECT_DEFAULT
 
 
 @dataclass(frozen=True)
@@ -158,7 +239,6 @@ class ShapeSpec:
 
     kind: str
     text: str | None = None
-    font_id: str | None = None
     inner_radius: float | None = None
 
 
@@ -167,16 +247,21 @@ class Mask:
     """Fillable-cell grid produced by :func:`build_mask`.
 
     Attributes:
-        width: number of columns.
-        height: number of rows (equals ``SizeRequest.height_rows``).
+        kind: the shape kind this mask was built from.
+        width: number of columns (a size authority).
+        height: number of rows, equals ``SizeRequest.height_rows`` (a size
+            authority).
         allowed: ``allowed[row][col]`` — may the renderer put ink here?
         spans: per row, ordered non-overlapping ``(start, end)`` half-open
             intervals of allowed cells.
-        scale: rows per shape unit (the shape is normalised to v ∈ [-1, 1]).
         font_metrics: the metrics the mask was built for.
         features: named geometry, e.g. ``eye_left`` / ``nose`` / ``code_strokes``.
         inner_radius: always ``None`` for now (rings are not supported).
-        kind: the shape kind this mask was built from.
+
+    ``width`` and ``height`` are the only stored size authority. ``scale`` is a
+    read-only property derived from ``height`` (the shape is normalised to
+    ``v ∈ [-1, 1]``, so one shape unit is half the mask height); it is
+    **derived, not authoritative** and never feeds back into the geometry.
     """
 
     kind: str
@@ -184,10 +269,14 @@ class Mask:
     height: int
     allowed: tuple[tuple[bool, ...], ...]
     spans: tuple[tuple[tuple[int, int], ...], ...]
-    scale: float
     font_metrics: FontMetrics
     features: Mapping[str, frozenset[tuple[int, int]]] = field(default_factory=dict)
     inner_radius: None = None
+
+    @property
+    def scale(self) -> float:
+        """Rows per shape unit — derived, not authoritative."""
+        return self.height / _SHAPE_V_SPAN
 
     def row_spans(self, row: int) -> tuple[tuple[int, int], ...]:
         """Return the spans of ``row`` (convenience alias for ``spans[row]``)."""
@@ -374,34 +463,49 @@ def build_mask(
             ``check()``; called once per row.
 
     Raises:
-        ShapeError: ``INVALID_SHAPE`` for unknown kinds, ``text != "CODE"`` or a
-            non-``None`` ``inner_radius``; ``INVALID_SIZE`` for a non-positive or
-            non-integer ``height_rows`` / a bad ``cell_aspect``.
+        PipelineError: the shared stage failure, always with ``stage="shape"``
+            and a ``Diagnostic``. ``INVALID_SHAPE`` for an unknown ``kind``,
+            ``text != "CODE"``, a non-``None`` ``inner_radius``, an unsupported
+            ``cell_aspect`` or a mask with no fillable cell; ``INVALID_SIZE``
+            for a non-positive or non-integer ``height_rows`` and for malformed
+            cell metrics. ``ShapeError`` is a synonym of ``PipelineError``.
     """
     if not isinstance(shape_spec, ShapeSpec):
-        raise ShapeError("INVALID_SHAPE", f"shape_spec must be a ShapeSpec, got {type(shape_spec).__name__}")
+        raise _error(ErrorCode.INVALID_SHAPE,
+                     f"shape_spec must be a ShapeSpec, got {type(shape_spec).__name__}",
+                     "ShapeSpec")
     if not isinstance(size_request, SizeRequest):
-        raise ShapeError("INVALID_SIZE", f"size_request must be a SizeRequest, got {type(size_request).__name__}")
+        raise _error(ErrorCode.INVALID_SIZE,
+                     f"size_request must be a SizeRequest, got {type(size_request).__name__}",
+                     "SizeRequest")
     if not isinstance(font_metrics, FontMetrics):
-        raise ShapeError("INVALID_SIZE", f"font_metrics must be a FontMetrics, got {type(font_metrics).__name__}")
+        raise _error(ErrorCode.INVALID_SIZE,
+                     f"font_metrics must be a FontMetrics, got {type(font_metrics).__name__}",
+                     "FontMetrics")
 
     rows = size_request.height_rows
     if isinstance(rows, bool) or not isinstance(rows, int) or rows <= 0:
-        raise ShapeError("INVALID_SIZE", f"height_rows must be a positive integer, got {rows!r}")
+        raise _error(ErrorCode.INVALID_SIZE,
+                     f"height_rows must be a positive integer, got {rows!r}",
+                     "SizeRequest.height_rows")
 
     kind = shape_spec.kind
     if kind not in _SHAPE_KINDS:
-        raise ShapeError("INVALID_SHAPE", f"unknown shape kind {kind!r}; expected one of {_SHAPE_KINDS}")
+        raise _error(ErrorCode.INVALID_SHAPE,
+                     f"unknown shape kind {kind!r}; expected one of {_SHAPE_KINDS}",
+                     "ShapeSpec.kind")
 
     if shape_spec.inner_radius is not None:
-        raise ShapeError(
-            "INVALID_SHAPE",
-            "ring shapes are not supported yet (inner_radius must be None)")
+        raise _error(
+            ErrorCode.INVALID_SHAPE,
+            "ring shapes are not supported yet (inner_radius must be None)",
+            "ShapeSpec.inner_radius")
 
     if kind == "code" and shape_spec.text not in (None, _CODE_TEXT):
-        raise ShapeError(
-            "INVALID_SHAPE",
-            f"code shape only supports text='CODE', got {shape_spec.text!r}")
+        raise _error(
+            ErrorCode.INVALID_SHAPE,
+            f"code shape only supports text='CODE', got {shape_spec.text!r}",
+            "ShapeSpec.text")
 
     aspect = font_metrics.cell_aspect
     cols = max(1, math.ceil(rows * _shape_ratio(kind) / aspect))
@@ -416,6 +520,16 @@ def build_mask(
 
     allowed_t = tuple(tuple(bool(v) for v in row) for row in allowed)
     spans = _spans_from_rows(allowed_t)
+
+    # An empty mask would hand C a canvas it can never fill: reject it here
+    # instead of failing later inside the layout engine.
+    if not any(any(row) for row in allowed_t) or not any(spans):
+        raise _error(
+            ErrorCode.INVALID_SHAPE,
+            f"{kind} shape has no fillable cell at {rows} rows "
+            f"({cols} columns)",
+            "Mask.allowed")
+
     frozen_features = {name: frozenset(cells) for name, cells in features.items()}
 
     return Mask(
@@ -424,7 +538,6 @@ def build_mask(
         height=rows,
         allowed=allowed_t,
         spans=spans,
-        scale=rows / 2.0,
         font_metrics=font_metrics,
         features=frozen_features,
         inner_radius=None,
@@ -524,3 +637,19 @@ def geometry_metrics(mask: Mask) -> dict:
         "holes": _holes(mask),
         "code_stroke_cells": len(mask.features.get("code_strokes", ())),
     }
+
+
+# ---------------------------------------------------------------------------
+# shared error contract (imported last: contracts re-exports B's types)
+# ---------------------------------------------------------------------------
+
+# `codeart.contracts` re-exports FontMetrics/Mask/ShapeSpec/SizeRequest, so it
+# cannot be imported before those classes exist.  Doing it here keeps one
+# initialisation direction: whichever module is imported first, the other one
+# sees fully defined names.
+from .contracts import Diagnostic, ErrorCode, PipelineError  # noqa: E402
+
+#: Backwards-compatible name for B's failure. It is now the shared
+#: ``PipelineError``, so ``except ShapeError`` and ``except PipelineError``
+#: catch exactly the same failures.
+ShapeError = PipelineError

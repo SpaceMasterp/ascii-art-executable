@@ -14,13 +14,17 @@ if str(ROOT) not in sys.path:
 import pytest  # noqa: E402
 
 from codeart import (  # noqa: E402
+    CELL_ASPECT_TOLERANCE,
     FontMetrics,
+    Mask,
     ShapeError,
     ShapeSpec,
     SizeRequest,
     build_mask,
     geometry_metrics,
 )
+from codeart import shapes  # noqa: E402
+from codeart.contracts import ErrorCode, PipelineError, StageError  # noqa: E402
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "shapes"
 KINDS = ("circle", "cat", "code")
@@ -132,33 +136,141 @@ def test_scaling_preserves_geometry():
     assert large["ear_gap_rows"] >= small["ear_gap_rows"]
 
 
+# ------------------------------------------------------------------ contracts --
+
+def test_metrics_default_construction_matches_explicit_default():
+    """``FontMetrics()`` and ``FontMetrics(0.5)`` are the same metrics."""
+    default = FontMetrics()
+    explicit = FontMetrics(0.5)
+    assert default == explicit
+    assert default.cell_aspect == explicit.cell_aspect == 0.5
+    assert FontMetrics(cell_aspect=0.5) == default
+    assert default.font_id is None
+    assert default.cell_width_px is None and default.cell_height_px is None
+
+
+def test_cell_aspect_is_derived_from_the_cell_size():
+    metrics = FontMetrics(font_id="mono", cell_width_px=8, cell_height_px=16)
+    assert metrics.cell_aspect == 0.5          # 8 / 16, not a stored constant
+    assert metrics.font_id == "mono"
+    assert metrics.cell_width_px == 8 and metrics.cell_height_px == 16
+    # A different pixel size with the same ratio is still the project ratio.
+    assert FontMetrics(cell_width_px=12, cell_height_px=24).cell_aspect == 0.5
+
+
+def test_cell_aspect_is_a_derived_property():
+    assert isinstance(FontMetrics.cell_aspect, property)
+    with pytest.raises(AttributeError):
+        FontMetrics().cell_aspect = 1.0        # frozen: derived, not assignable
+
+
+def test_ratio_within_the_tolerance_is_accepted():
+    metrics = FontMetrics(0.5 + CELL_ASPECT_TOLERANCE / 2)
+    assert metrics.cell_aspect == 0.5
+
+
+@pytest.mark.parametrize("bad", (0.7, 1.0, 0.25, 0.5 + 2 * CELL_ASPECT_TOLERANCE))
+def test_explicit_aspect_other_than_the_project_value_is_rejected(bad):
+    with pytest.raises(PipelineError) as info:
+        FontMetrics(bad)
+    diagnostic = info.value.diagnostic
+    assert diagnostic.code == ErrorCode.INVALID_SHAPE
+    assert diagnostic.stage == "shape"
+    assert diagnostic.location == "FontMetrics.cell_aspect"
+
+
+def test_pixel_size_with_a_different_ratio_is_rejected():
+    with pytest.raises(PipelineError) as info:
+        FontMetrics(cell_width_px=10, cell_height_px=10)   # ratio 1.0
+    assert info.value.diagnostic.code == ErrorCode.INVALID_SHAPE
+    with pytest.raises(PipelineError):
+        FontMetrics(cell_width_px=8)                       # height is missing
+
+
+@pytest.mark.parametrize("bad", (0, -1, True, float("nan")))
+def test_malformed_aspect_is_an_invalid_size(bad):
+    with pytest.raises(PipelineError) as info:
+        FontMetrics(bad)
+    assert info.value.diagnostic.code == ErrorCode.INVALID_SIZE
+
+
+def test_shape_spec_has_no_font_id():
+    assert "font_id" not in {name for name in ShapeSpec.__dataclass_fields__}
+    with pytest.raises(TypeError):
+        ShapeSpec("cat", font_id="mono")
+
+
+def test_mask_scale_is_derived_from_the_height():
+    """``width``/``height`` are the only size authority; ``scale`` follows."""
+    assert "scale" not in {name for name in Mask.__dataclass_fields__}
+    mask = make("cat", 32)
+    assert mask.scale == mask.height / 2
+    assert make("cat", 64).scale == 32.0
+
+
+def test_error_names_are_synonyms():
+    assert ShapeError is PipelineError
+    assert StageError is PipelineError
+
+
 # -------------------------------------------------------------------- errors --
 
 def test_inner_radius_is_rejected():
-    with pytest.raises(ShapeError) as info:
+    with pytest.raises(PipelineError) as info:
         build_mask(ShapeSpec("cat", inner_radius=0.5), SizeRequest(32), FontMetrics())
-    assert info.value.code == "INVALID_SHAPE"
-    assert "ring" in info.value.message
+    diagnostic = info.value.diagnostic
+    assert diagnostic.code == ErrorCode.INVALID_SHAPE
+    assert diagnostic.stage == "shape"
+    assert diagnostic.location == "ShapeSpec.inner_radius"
+    assert "ring" in diagnostic.message
 
 
 def test_code_text_must_be_code():
     make("code")                                    # defaults to CODE
-    with pytest.raises(ShapeError) as info:
+    with pytest.raises(PipelineError) as info:
         build_mask(ShapeSpec("code", text="HELLO"), SizeRequest(32), FontMetrics())
-    assert info.value.code == "INVALID_SHAPE"
+    assert info.value.diagnostic.code == ErrorCode.INVALID_SHAPE
 
 
 def test_invalid_height_rows():
     for bad in (0, -5):
-        with pytest.raises(ShapeError) as info:
+        with pytest.raises(PipelineError) as info:
             build_mask(ShapeSpec("circle"), SizeRequest(bad), FontMetrics())
-        assert info.value.code == "INVALID_SIZE"
+        diagnostic = info.value.diagnostic
+        assert diagnostic.code == ErrorCode.INVALID_SIZE
+        assert diagnostic.stage == "shape"
+        assert diagnostic.location == "SizeRequest.height_rows"
 
 
 def test_unknown_kind_is_rejected():
-    with pytest.raises(ShapeError) as info:
+    with pytest.raises(PipelineError) as info:
         build_mask(ShapeSpec("triangle"), SizeRequest(32), FontMetrics())
-    assert info.value.code == "INVALID_SHAPE"
+    assert info.value.diagnostic.code == ErrorCode.INVALID_SHAPE
+
+
+def test_build_mask_raises_the_shared_pipeline_error():
+    """``height_rows=0`` keeps INVALID_SIZE instead of becoming LAYOUT_LIMIT."""
+    with pytest.raises(PipelineError) as info:
+        build_mask(ShapeSpec("circle"), SizeRequest(height_rows=0), FontMetrics())
+    error = info.value
+    assert isinstance(error, ShapeError)            # compatibility alias
+    assert isinstance(error, StageError)            # canonical alias
+    assert error.diagnostic.code == ErrorCode.INVALID_SIZE
+    assert error.diagnostic.stage == "shape"
+
+
+def test_empty_mask_is_rejected(monkeypatch):
+    def empty_rows(cols, rows, aspect, ctx):
+        return [[False] * cols for _ in range(rows)]
+
+    monkeypatch.setattr(shapes, "_circle_rows", empty_rows)
+    with pytest.raises(PipelineError) as info:
+        build_mask(ShapeSpec("circle"), SizeRequest(8), FontMetrics())
+    diagnostic = info.value.diagnostic
+    assert diagnostic.code == ErrorCode.INVALID_SHAPE
+    assert diagnostic.stage == "shape"
+    assert diagnostic.location == "Mask.allowed"
+    assert "fillable" in diagnostic.message
 
 
 # -------------------------------------------------------------------- ctx --
