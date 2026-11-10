@@ -33,7 +33,7 @@ loopback policy and body limit.
 
 | Command | Result |
 | --- | --- |
-| `python -m pytest -q` | **322 passed** (28.91 s on the final run) |
+| `python -m pytest -q` | **326 passed** (29.61 s on the final run) |
 | `python -m scripts.run_verification --output-dir <new-dir>` | **144/144 comparisons**; cat 1x/2x/4x PASS |
 | `node --check codeart/web/app.js` | pass |
 | `git diff --check` | pass |
@@ -46,4 +46,6 @@ after the retry.
 
 Follow-up review: masked complete macro continuations so their bodies cannot
 become selectable definitions, and replaced the low-fill hint with a neutral
-density note for all three shapes.
+density note for all three shapes. A second review pass moved `status` after
+the existing `GenerationResult` fields, made skipped required checks fail, and
+reused the common serializer for `--file` failures.

@@ -278,17 +278,30 @@ class GenerationRequest:
 class GenerationResult:
     """Artifacts retained from all stages that returned before the pipeline stopped."""
 
-    status: GenerationStatus = GenerationStatus.OK
     plan: LayoutPlan | None = None
     rendered: RenderedCode | None = None
     verification: VerificationReport | None = None
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    status: GenerationStatus = GenerationStatus.OK
 
     def __post_init__(self) -> None:
-        if self.status == GenerationStatus.OK and self.diagnostics:
+        if self.status != GenerationStatus.OK:
+            return
+        if self.diagnostics:
             if any(item.code == ErrorCode.CANCELLED for item in self.diagnostics):
                 self.status = GenerationStatus.CANCELLED
             else:
+                self.status = GenerationStatus.FAILED
+            return
+        if self.verification is not None:
+            required = (
+                self.verification.token_status,
+                self.verification.geometry_status,
+                self.verification.compile_status,
+            )
+            if any(status != CheckStatus.PASS for status in required):
+                self.status = GenerationStatus.FAILED
+            elif self.verification.behavior_status == CheckStatus.FAIL:
                 self.status = GenerationStatus.FAILED
 
 

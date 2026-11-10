@@ -65,8 +65,15 @@ def test_cli_file_failure_report_is_unified(tmp_path):
     src.write_text('#if 0\nint f(void){return 1;}\n#endif\n')
     assert main(['--file', str(src), '--function', 'f', '--report', str(report)]) == 1
     data = json.loads(report.read_text())
+    from codeart.contracts import GenerationResult
+    from codeart.presentation import describe_result
+    assert set(data) == set(describe_result(GenerationResult())) | {'revision', 'prepass'}
     assert data['status'] == 'FAILED'
+    assert data['verified'] is False
     assert 'revision' in data
+    assert 'font_id' in data
+    assert 'code_fill_ratio' in data
+    assert 'code_fill_warning' in data
     assert data['prepass']['error'] == 'NO_ELIGIBLE_FUNCTION'
     assert data['diagnostics'] == []
     for name in ('token', 'geometry', 'compile', 'behavior'):
@@ -184,6 +191,46 @@ def test_web_file_mode_generates_extracted_function():
             report = json.load(response)
         assert report['result']['status'] == 'OK'
         assert report['result']['checks']['behavior']['reason'] == 'NO_FIXTURE'
+    finally:
+        server.shutdown()
+        server.server_close()
+        server.jobs.shutdown()
+        worker.join()
+
+
+def test_web_file_mode_failure_uses_common_report():
+    import json
+    from threading import Thread
+    from urllib.request import Request, urlopen
+    from urllib.error import HTTPError
+    from codeart.app import create_server
+    server = create_server(0)
+    worker = Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    base = f'http://127.0.0.1:{server.server_port}'
+    try:
+        payload = json.dumps({
+            'source': '#if 0\nint f(void){return 1;}\n#endif\n',
+            'file_mode': True, 'function': 'f', 'shape': 'circle', 'scale': 1,
+        }).encode()
+        request = Request(base + '/api/generate', data=payload,
+                          headers={'Content-Type': 'application/json'})
+        try:
+            urlopen(request, timeout=30)
+            raise AssertionError('expected HTTP 400')
+        except HTTPError as exc:
+            assert exc.code == 400
+            data = json.load(exc)
+        assert data['status'] == 'FAILED'
+        assert data['error'] == 'NO_ELIGIBLE_FUNCTION'
+        assert data['prepass']['error'] == 'NO_ELIGIBLE_FUNCTION'
+        assert 'revision' in data
+        assert 'font_id' in data
+        assert 'code_fill_ratio' in data
+        assert 'code_fill_warning' in data
+        for name in ('token', 'geometry', 'compile', 'behavior'):
+            assert data['checks'][name]['status'] == 'NOT_RUN'
+            assert data['checks'][name]['reason'] == 'NO_ELIGIBLE_FUNCTION'
     finally:
         server.shutdown()
         server.server_close()

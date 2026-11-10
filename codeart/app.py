@@ -16,7 +16,7 @@ from .contracts import (
 from .environment import environment_info, revision_info
 from .pipeline import generate
 from .prepass import inspect_file, selected_source
-from .presentation import FONT_ID, json_value
+from .presentation import FONT_ID, describe_prepass_failure, json_value
 from .presentation import artifact_name, describe_result
 from .verification_fixtures import BUILTIN_FIXTURES, select_builtin
 
@@ -216,7 +216,10 @@ def create_server(port=8765, *, runner=generate):
                         self.respond(200, json_value(extraction))
                         return
                     if extraction.error:
-                        self.respond(400, {"error": extraction.error, "prepass": json_value(extraction)})
+                        failure = describe_prepass_failure(extraction)
+                        failure["revision"] = self.server.jobs.revision
+                        failure["error"] = extraction.error
+                        self.respond(400, failure)
                         return
                     data["source"] = selected_source(extraction)
                     data["sample"] = None

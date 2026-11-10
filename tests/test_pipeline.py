@@ -6,8 +6,8 @@ import pytest
 from codeart import pipeline
 from codeart._integration_demo import DEMO_SOURCE, demo_deps
 from codeart.contracts import (
-    CheckStatus, Diagnostic, ErrorCode, GenerationRequest, GenerationStatus,
-    ShapeSpec, StageError, VerificationReport,
+    CheckStatus, Diagnostic, ErrorCode, GenerationRequest, GenerationResult,
+    GenerationStatus, ShapeSpec, StageError, VerificationReport,
 )
 from codeart.presentation import describe_result
 from fixtures.verification_reports import make_verifier_stub
@@ -126,6 +126,28 @@ def test_production_reports_a_missing_module(request_data, monkeypatch):
     assert result.status == GenerationStatus.FAILED
     assert [d.code for d in result.diagnostics] == [ErrorCode.DEPENDENCY_UNAVAILABLE]
     assert "codeart.source" in result.diagnostics[0].message
+
+
+def test_skipped_required_check_sets_failed_status(request_data):
+    report = VerificationReport(
+        token_status=CheckStatus.PASS,
+        geometry_status=CheckStatus.PASS,
+        compile_status=CheckStatus.NOT_RUN,
+    )
+    result = pipeline.generate(
+        request_data, deps=replace(demo_deps(), verifier=lambda *a, **k: report))
+    assert result.status == GenerationStatus.FAILED
+    assert describe_result(result)["verified"] is False
+
+
+def test_old_positional_generation_result_constructor_still_works():
+    diagnostic = Diagnostic(ErrorCode.LAYOUT_LIMIT, "layout", "old positional")
+    result = GenerationResult(None, None, None, [diagnostic])
+    assert result.plan is None
+    assert result.rendered is None
+    assert result.verification is None
+    assert result.diagnostics == [diagnostic]
+    assert result.status == GenerationStatus.FAILED
 
 
 @pytest.mark.parametrize(("case", "checks", "status"), [

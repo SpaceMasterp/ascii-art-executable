@@ -3,7 +3,7 @@
 from dataclasses import asdict, is_dataclass
 from enum import Enum
 
-from .contracts import CheckStatus, ErrorCode
+from .contracts import CheckStatus, ErrorCode, GenerationResult, GenerationStatus
 
 CHECKS = ("token", "geometry", "compile", "behavior")
 
@@ -22,6 +22,16 @@ def json_value(value):
     if isinstance(value, (tuple, list)):
         return [json_value(item) for item in value]
     return value
+
+
+def describe_prepass_failure(extraction):
+    """Serialize a prepass rejection with the same keys as a normal result."""
+    report = describe_result(GenerationResult(status=GenerationStatus.FAILED))
+    report["prepass"] = json_value(extraction)
+    for check in report["checks"].values():
+        check["status"] = CheckStatus.NOT_RUN.value
+        check["reason"] = extraction.error
+    return report
 
 
 def describe_result(result):

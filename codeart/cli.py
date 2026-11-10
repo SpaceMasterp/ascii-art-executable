@@ -12,27 +12,8 @@ from .environment import revision_info
 from .pipeline import generate
 from .prepass import inspect_file, selected_source, SCOPE
 from .presentation import json_value
-from .presentation import CHECKS, FONT_ID, LOW_CODE_FILL_WARNING, describe_result
+from .presentation import CHECKS, FONT_ID, LOW_CODE_FILL_WARNING, describe_prepass_failure, describe_result
 from .verification_fixtures import BUILTIN_FIXTURES, select_builtin
-
-
-def _prepass_failure_report(extraction):
-    """Keep the same top-level report shape as a successful run."""
-    return {
-        "status": GenerationStatus.FAILED.value,
-        "revision": revision_info(),
-        "checks": {
-            name: {"status": CheckStatus.NOT_RUN.value, "reason": extraction.error}
-            for name in CHECKS
-        },
-        "diagnostics": [],
-        "attempt_history": [],
-        "layout": None,
-        "coverage": None,
-        "source_text": None,
-        "verification": None,
-        "prepass": json_value(extraction),
-    }
 
 
 def main(argv=None) -> int:
@@ -76,7 +57,8 @@ def main(argv=None) -> int:
     if extraction:
         print(SCOPE, file=sys.stderr)
         if extraction.error:
-            data = _prepass_failure_report(extraction)
+            data = describe_prepass_failure(extraction)
+            data["revision"] = revision_info()
             if args.report:
                 try:
                     args.report.write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -102,12 +102,13 @@ def _final_status(result: GenerationResult) -> GenerationStatus:
     if result.diagnostics:
         return GenerationStatus.FAILED
     if result.verification is not None:
-        checks = (
+        required = (
             result.verification.token_status,
             result.verification.geometry_status,
             result.verification.compile_status,
-            result.verification.behavior_status,
         )
-        if any(status == CheckStatus.FAIL for status in checks):
+        if any(status != CheckStatus.PASS for status in required):
+            return GenerationStatus.FAILED
+        if result.verification.behavior_status == CheckStatus.FAIL:
             return GenerationStatus.FAILED
     return GenerationStatus.OK

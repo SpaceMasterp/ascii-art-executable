@@ -8,7 +8,7 @@ import sys
 import pytest
 
 from codeart.presentation import describe_result
-from codeart.contracts import Diagnostic, ErrorCode, GenerationResult
+from codeart.contracts import CheckStatus, Diagnostic, ErrorCode, GenerationResult, VerificationReport
 
 
 def test_cli_real_sample_source_and_report(tmp_path):
@@ -32,6 +32,17 @@ def test_cli_real_sample_source_and_report(tmp_path):
     assert report["layout"]["scale"] == 1.5
     assert output.read_bytes() == report["source_text"].encode()
     assert output.read_bytes().endswith(b"\n")
+
+
+def test_cli_skipped_required_check_returns_nonzero(monkeypatch):
+    import codeart.cli as cli
+    result = GenerationResult(verification=VerificationReport(
+        token_status=CheckStatus.PASS,
+        geometry_status=CheckStatus.PASS,
+        compile_status=CheckStatus.NOT_RUN,
+    ))
+    monkeypatch.setattr(cli, "generate", lambda *args, **kwargs: result)
+    assert cli.main(["--sample", "max2"]) == 1
 
 
 @pytest.mark.parametrize(("option", "alias"), [
