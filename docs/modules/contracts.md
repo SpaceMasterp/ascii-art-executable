@@ -59,7 +59,8 @@ Tests can pass compatible implementations in `PipelineDeps`.
 member of `PipelineDeps`. It locates candidate definitions in a complete C
 file and asks A to validate each extracted text; only the selected text is
 passed to `generate()`. `generate()` and A still accept exactly one
-self-contained function, so the v1.4 acceptance path is unchanged. The
+self-contained function. The prepass was accepted on 2026-11-10 as a v1.5
+extension; the v1.4 acceptance path is unchanged. The
 prepass result is attached to CLI/web reports as `prepass`; it is not part of
 `GenerationRequest`/`GenerationResult` contracts.
 

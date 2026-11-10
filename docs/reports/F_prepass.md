@@ -1,8 +1,9 @@
 # Part F complete-file entry and code-fill indicator
 
-Base: main@8b9f9e8. Review commits: b244984 (core fixes), d6c465c (test flake), 3b59da0 (macro masking), plus the neutral-note follow-up. This is an optional
-F-layer entry; it does not change A's contract, `generate()`'s single-function
-input, or C's sizing.
+Base: main@8b9f9e8. Review commits: b244984 (core fixes), d6c465c (test flake), 3b59da0 (macro masking), plus the neutral-note follow-up. Scope decision
+(2026-11-10): accepted as a v1.5 extension. It remains an optional F-layer
+entry; it does not change A's contract, `generate()`'s single-function input,
+or C's sizing.
 
 - CLI: `--file INPUT.c [--function NAME]`; the original `--source` stays available.
 - Web: file mode, Find functions, PASS/FAIL candidate selector and original-file diagnostics.

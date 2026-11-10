@@ -254,8 +254,9 @@ See [F's delivery follow-up](docs/reports/F_delivery.md) and
 F-layer convenience: it locates candidate definitions in a complete C file,
 runs each candidate through A's real analyzer, and passes only the chosen
 function to `generate()`. `generate()` and A still accept exactly one
-self-contained function, so this is outside the frozen v1.4 acceptance input;
-use `--sample`/`--source` for acceptance runs.
+self-contained function. This was accepted on 2026-11-10 as a v1.5 extension;
+the v1.4 acceptance input remains the single-function path, so use
+`--sample`/`--source` for v1.4 acceptance runs.
 
 Duplicate eligible names are reported as `AMBIGUOUS_FUNCTION`; use
 `--function` only when the name is unique.
