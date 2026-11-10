@@ -5,6 +5,9 @@ Code under test is commit
 `3dab181abde97f9389c61a60c067558c782c16d5`.
 The implementation checkout was clean when formal acceptance and environment
 capture ran. Evidence files were copied into this report after validation.
+The archived C filenames and their `source_file` references include the
+`_s1` suffix for the realized scale. The source bytes and measured results
+are from the original run.
 
 The production process utilities, lexer cleanup, verification context and
 regression imports match main's Part E implementation. F retains compatibility

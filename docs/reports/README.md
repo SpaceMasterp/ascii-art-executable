@@ -39,7 +39,7 @@ second-round completion sheet. Each owner adds their own sheet to this index.
   correction, `base_area` from h32) are in
   [B_shapes.md](B_shapes.md), with evidence under
   [`b_shapes/`](b_shapes/). See the
-  [verification guide](../modules/verify.md#固定尺寸验收) for the report fields.
+  [verification guide](../modules/verify.md#fixed-size-acceptance) for the report fields.
 - C owns the narrow-span hollow CODE and longest-token growth regressions.
 - D reports token, block-comment and line-comment contributions separately.
 - E distinguishes fixed h32 behavior evidence from grown cases, and records
