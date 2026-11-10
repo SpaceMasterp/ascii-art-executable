@@ -1,0 +1,102 @@
+{
+  "environment": {
+    "python": "3.12.10",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "packages": {
+      "libclang": "18.1.1",
+      "pytest": "9.2.0"
+    },
+    "compiler": "/usr/bin/clang",
+    "compiler_version": "Apple clang version 21.0.0 (clang-2100.4.1.1)",
+    "font": "Roboto Mono Regular",
+    "cell_aspect": 0.5,
+    "revision": {
+      "commit": "b38b92bb7af902a898a5e616f70cce2e191f3c98",
+      "dirty": false
+    }
+  },
+  "full_test_suite": {
+    "passed": 284,
+    "elapsed_s": 22.41
+  },
+  "fixed_matrix": {
+    "height_rows": 32,
+    "outputs": 18,
+    "checks_passed": {
+      "token": 18,
+      "geometry": 18,
+      "compile": 18,
+      "behavior": 18
+    },
+    "behavior_comparisons": 144,
+    "build_counts": {
+      "object": 18,
+      "original": 6,
+      "rendered": 18
+    },
+    "elapsed_s": 6.579,
+    "geometry": {
+      "min_coverage": 0.9886018237082067,
+      "max_coverage": 0.999037072701011,
+      "min_cat_ear_coverage": 0.8914728682170543,
+      "max_out_of_bounds_cells": 0,
+      "max_hole_leakage_cells": 0
+    }
+  },
+  "cat_scales": {
+    "1": {
+      "status": "PASS",
+      "issues": []
+    },
+    "2": {
+      "status": "PASS",
+      "issues": []
+    },
+    "4": {
+      "status": "PASS",
+      "issues": []
+    }
+  },
+  "passed": true,
+  "behavior_skips": {
+    "function": "max2",
+    "shape": "circle",
+    "max_behavior_cells": 100000,
+    "cases": {
+      "ordinary": {
+        "width_columns": 64,
+        "height_rows": 32,
+        "canvas_cells": 2048,
+        "has_fixture": false,
+        "checks": {
+          "token": "PASS",
+          "geometry": "PASS",
+          "compile": "PASS",
+          "behavior": "NOT_RUN"
+        },
+        "skip_reasons": {
+          "behavior": "NO_FIXTURE"
+        },
+        "behavior_cases_compared": 0,
+        "elapsed_s": 0.1384743749804329
+      },
+      "oversized": {
+        "width_columns": 480,
+        "height_rows": 240,
+        "canvas_cells": 115200,
+        "has_fixture": true,
+        "checks": {
+          "token": "PASS",
+          "geometry": "PASS",
+          "compile": "PASS",
+          "behavior": "NOT_RUN"
+        },
+        "skip_reasons": {
+          "behavior": "OUTPUT_TOO_LARGE"
+        },
+        "behavior_cases_compared": 0,
+        "elapsed_s": 0.1506780830095522
+      }
+    }
+  }
+}
