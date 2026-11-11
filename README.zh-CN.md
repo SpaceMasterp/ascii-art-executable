@@ -35,8 +35,8 @@ python -m pytest -q
 
 ## 当前状态
 
-`0c80b7b` 基线已通过 328 项测试、18 份固定尺寸输出、144 次行为对照，
-以及猫头 1×、2×、4× 检查。[main@0c80b7b 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42843452033)
+当前 main `e1ab318` 已通过 317 项测试、18 份固定尺寸输出、144 次行为对照，
+以及猫头 1×、2×、4× 检查。[main@e1ab318 的 Ubuntu 全量 CI](https://github.com/nukofish/ascii-art-executable/actions/runs/42831752108)
 也已通过全量套件；这次 CI 未运行正式验收矩阵。
 
 | 项目 | 状态 | 说明 |
@@ -133,14 +133,16 @@ python -m scripts.run_verification --output-dir docs/reports/local-check/fixed
 
 | 事件 | Ubuntu 快速检查 | Ubuntu 全量 | macOS 附加全量 |
 | --- | --- | --- | --- |
-| PR 创建、更新、重开（无标签） | 运行 | 运行 | 跳过 |
-| PR 仅有 macos-ci 标签 | 运行 | 运行 | 运行 |
+| PR 创建、更新、重开（无标签） | 运行 | 跳过 | 跳过 |
+| PR 仅有 full-ci 标签 | 运行 | 运行 | 跳过 |
+| PR 仅有 macos-ci 标签 | 运行 | 跳过 | 运行 |
+| PR 同时有上述两个标签 | 运行 | 运行 | 运行 |
 | 推送 main 或 v* 标签 | 运行 | 运行 | 跳过 |
 | Actions 手动运行 | 运行 | 运行 | 运行 |
 
-每个 PR 都运行两个 Ubuntu 任务。需要 Apple Clang 验证时，添加 `macos-ci`
-标签；也可以在 Actions 中手动运行 Python tests，一次运行两个平台。macOS
-运行器容量不足可能延迟附加检查。
+需要 Ubuntu 全量验证时，添加 `full-ci` 标签；需要 Apple Clang 验证时，
+添加 `macos-ci` 标签。也可以在 Actions 中手动运行 Python tests，一次运行
+两个平台。macOS 运行器容量不足可能延迟附加检查。
 同一 PR 的新事件会取消旧运行。PR 应写明实际命令、测试结果和环境版本。
 
 ## 参考资料

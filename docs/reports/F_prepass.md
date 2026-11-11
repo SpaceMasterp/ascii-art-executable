@@ -14,7 +14,7 @@ or C's sizing.
 - Audit: JSON prepass includes exact extracted text, original line ranges, rejection diagnostics, selection, ignored line intervals and precise `ignored_segments` for same-line prefixes/suffixes.
 - Failure report: CLI extraction failures keep the same top-level shape as a success (`status=FAILED`, `revision`, `prepass` error, four checks `NOT_RUN`), so consumers do not need a second schema.
 - Result status: `GenerationResult.status` is `OK`/`FAILED`/`CANCELLED`; `describe_result` exposes it alongside the four checks. `verified` requires `status=OK`, so an injected `FAILED`/`CANCELLED` result cannot display as verified even when its four checks pass.
-- Font: F passes `FontMetrics(font_id="Roboto Mono Regular")` into `LayoutOptions`; `describe_result` reads the font identity and cell aspect back from `mask.font_metrics`, and the preview uses the cell aspect for line height.
+- Font: F passes `FontMetrics(font_id="Roboto Mono Regular")` into `LayoutOptions`; `describe_result` reads the font identity back from `mask.font_metrics`.
 - Indicator: `code_fill_ratio` uses D's non-space token ink / allowed cells, excluding filler comments. Below 10%, it displays `Token density is low; filler comments occupy most allowed cells.`; it does not fail verification, change layout or recommend a size.
 
 Regression coverage uses real A: external global rejection and original
@@ -33,7 +33,7 @@ loopback policy and body limit.
 
 | Command | Result |
 | --- | --- |
-| `python -m pytest -q` | **336 passed** (31.08 s on the final run) |
+| `python -m pytest -q` | **328 passed** (39.91 s on the final run) |
 | `python -m scripts.run_verification --output-dir <new-dir>` | **144/144 comparisons**; cat 1x/2x/4x PASS |
 | `node --check codeart/web/app.js` | pass |
 | `git diff --check` | pass |

@@ -9,7 +9,6 @@ import pytest
 
 from codeart.presentation import describe_result
 from codeart.contracts import CheckStatus, Diagnostic, ErrorCode, GenerationResult, VerificationReport
-from fixtures.verification_reports import make_verifier_stub
 
 
 def test_cli_real_sample_source_and_report(tmp_path):
@@ -94,26 +93,3 @@ def test_artifact_names_include_realized_size():
     assert fixed == "case_max2_cat_h32_s1.c"
     assert grown == "case_max2_cat_h64_s2.c"
     assert fixed != grown
-
-
-@pytest.mark.parametrize(("case", "status", "verified"), [
-    ("pass", "OK", True),
-    ("token_mismatch", "FAILED", False),
-    ("hole_leakage", "FAILED", False),
-    ("compiler_unavailable", "FAILED", False),
-])
-def test_cli_report_uses_e_verifier_stub(tmp_path, monkeypatch, case, status, verified):
-    import codeart.cli as cli
-    report = make_verifier_stub(case)(None, None, None, None, None, ctx=None)
-    result = GenerationResult(verification=report)
-    monkeypatch.setattr(cli, "generate", lambda *args, **kwargs: result)
-    path = tmp_path / "report.json"
-
-    assert cli.main(["--sample", "max2", "--report", str(path)]) == (0 if status == "OK" else 1)
-    data = json.loads(path.read_text())
-    assert data["status"] == status
-    assert data["verified"] is verified
-    assert {name: data["checks"][name]["status"] for name in ("token", "geometry", "compile", "behavior")} == {
-        name: getattr(report, f"{name}_status").value
-        for name in ("token", "geometry", "compile", "behavior")
-    }

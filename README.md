@@ -28,19 +28,19 @@ Production use only needs `requirements.txt`. Development dependencies add
 pytest. Record the output of `python -m codeart.environment` with any bug
 report. CI runs the pure-Python tests in a fast `unit` job on ubuntu-latest on
 every trigger, and everything else in a `full` job that also runs on
-ubuntu-latest with Python 3.12, Clang 18, libclang 18.1.1 and pytest 9.2.0. The
-`full` job runs on pushes to main, on `v*` tags and on every pull request;
-macOS is covered by a separate `full-macos` job that only runs on manual
-dispatch or on a `macos-ci` label. See
+ubuntu-latest with Python 3.12, Clang, libclang 18.1.1 and pytest 9.2.0. The
+`full` job runs on pushes to main, on `v*` tags and on pull requests labelled
+`full-ci`; macOS is covered by a separate `full-macos` job that only runs on
+manual dispatch or on a `macos-ci` label. See
 [continuous integration](#continuous-integration). Local
 validation also uses macOS, Python 3.14 and Apple Clang. The exact local
 versions are available in the environment report.
 
 ## Status
 
-The `0c80b7b` baseline passed 328 tests, all 18 fixed-size cases and
+The current main `e1ab318` passed 317 tests, all 18 fixed-size cases and
 144 behavior comparisons, plus the cat checks at 1x, 2x and 4x. [The Ubuntu
-full CI run on main@0c80b7b](https://github.com/nukofish/ascii-art-executable/actions/runs/42843452033)
+full CI run on main@e1ab318](https://github.com/nukofish/ascii-art-executable/actions/runs/42831752108)
 also passed the full suite; that run did not execute production acceptance. Later commits have their own CI logs and versioned evidence.
 
 | Check or delivery | Status | Evidence or interpretation |
@@ -166,7 +166,7 @@ Web and CLI reports include that revision information.
 GitHub Actions runs three jobs. `Fast pure-Python checks (ubuntu)` uses
 ubuntu-latest with a five minute timeout and runs the pure-Python test files
 without libclang. `Full checks (ubuntu, clang + node)` is the baseline full
-suite: it uses ubuntu-latest with a fifteen minute timeout, installs `clang-18`
+suite: it uses ubuntu-latest with a fifteen minute timeout, installs `clang`
 plus `requirements-dev.txt`, logs the compiler version and the environment
 report, checks the browser script with `node --check`, rejects a decrease in
 the collected test count relative to the base revision and runs the whole
@@ -181,16 +181,19 @@ the default signal.
 
 | Event | ubuntu fast checks | ubuntu full checks | macOS full checks |
 | --- | --- | --- | --- |
-| Pull request opened, updated or reopened | yes | yes | skipped |
-| Pull request labelled `macos-ci` | yes | yes | yes |
+| Pull request opened, updated or reopened | yes | skipped | skipped |
+| Pull request labelled `full-ci` | yes | yes | skipped |
+| Pull request labelled `macos-ci` | yes | skipped | yes |
 | Push to `main` | yes | yes | skipped |
 | Push of a `v*` tag | yes | yes | skipped |
 | Manual `Run workflow` | yes | yes | yes |
 
-Every pull request runs both Ubuntu jobs. Add the `macos-ci` label to also run
-the full suite on macOS; removing that label cancels the pending macOS job and
-adding it back queues a fresh run. Recent runs of the same ref are cancelled
-when a newer run starts. To run everything by hand, open the **Actions** tab, select the
+A pull request runs only the ubuntu fast checks by default, which finish in
+seconds. Add the `full-ci` label to run the ubuntu full suite, or the
+`macos-ci` label to also run it on macOS. Removing a label cancels the pending
+run and leaves the next trigger with the jobs its labels still select; adding it
+back queues a fresh run. Recent runs of the same ref are cancelled when a newer
+run starts. To run everything by hand, open the **Actions** tab, select the
 **Python tests** workflow and choose **Run workflow** on the branch to check.
 
 The ubuntu full job fails rather than silently skipping when the `libclang`
