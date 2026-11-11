@@ -14,6 +14,7 @@ from codeart._integration_demo import demo_deps
 from codeart.contracts import Diagnostic, ErrorCode, GenerationResult
 from codeart.pipeline import generate
 from codeart.verification_fixtures import BUILTIN_FIXTURES
+from fixtures.verification_reports import make_verifier_stub
 
 
 @pytest.fixture
@@ -99,6 +100,38 @@ def test_page_assets_and_report_download(web_server):
     assert "attachment" in headers["Content-Disposition"]
     report, _ = call(base, f"/api/jobs/{identifier}/report.json")
     assert json.loads(report)["result"] == job["result"]
+
+
+@pytest.mark.parametrize(("case", "status", "verified"), [
+    ("pass", "OK", True),
+    ("token_mismatch", "FAILED", False),
+    ("hole_leakage", "FAILED", False),
+    ("compiler_unavailable", "FAILED", False),
+])
+def test_web_report_uses_e_verifier_stub(case, status, verified):
+    report = make_verifier_stub(case)(None, None, None, None, None, ctx=None)
+    result = GenerationResult(verification=report)
+
+    def runner(request, *, cancel_event):
+        return result
+
+    server = create_server(0, runner=runner)
+    worker = Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    try:
+        data, _ = call(base, "/api/generate", {"source": "int f(void){return 0;}"})
+        identifier = json.loads(data)["id"]
+        job = wait_result(base, identifier)
+        assert job["result"]["status"] == status
+        assert job["result"]["verified"] is verified
+        downloaded, _ = call(base, f"/api/jobs/{identifier}/report.json")
+        assert json.loads(downloaded)["result"] == job["result"]
+    finally:
+        server.shutdown()
+        server.jobs.shutdown()
+        server.server_close()
+        worker.join()
 
 
 def test_cancel_and_reject_overlapping_job(web_server):

@@ -90,6 +90,9 @@ function render(job) {
   const layout = result.layout;
   if (layout) byId("dimensions").textContent = layout.width + " × " + layout.height + " CELLS";
   byId("font-label").textContent = (result.font_id || "—") + " · fixed character grid";
+  if (result.cell_aspect) {
+    document.documentElement.style.setProperty("--cell-height", (1 / result.cell_aspect).toFixed(4) + "ch");
+  }
   const metrics = byId("metrics");
   metrics.replaceChildren();
   const values = [

@@ -70,6 +70,7 @@ def describe_result(result):
             "scale": plan.actual_scale, "attempts": plan.attempt_count,
         } if plan else None,
         "font_id": plan.mask.font_metrics.font_id if plan else None,
+        "cell_aspect": plan.mask.font_metrics.cell_aspect if plan else None,
         "code_fill_ratio": rendered.token_coverage if rendered else None,
         "code_fill_warning": LOW_CODE_FILL_WARNING if rendered and rendered.token_coverage < 0.10 else None,
         "coverage": {
