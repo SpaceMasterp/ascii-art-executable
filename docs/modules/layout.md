@@ -44,14 +44,45 @@ plan = fit_layout(
    span without committing anything; when no span can hold it, the attempt
    fails and reports that token's index.
 
+## Initial size estimate
+
+Before the retry loop, the engine builds a scale-1 base mask and measures it
+so the first attempt starts at a realistically large size instead of wasting
+retries on small masks. From the base mask it takes the longest fillable
+span `U` and the total fillable cells `A`; from the tokens it takes the
+longest token `L` and the total token width `T`. The estimated scale is
+
+```
+s_est = max(1, initial_scale, L / U, sqrt(T / (eta * A)))
+```
+
+with `eta = 0.75` (the expected fill fraction). `L/U` guarantees a span can
+hold the longest token; `sqrt(T/(eta*A))` guarantees enough total area (area
+scales with the square of the scale).
+
+### Clamping to the canvas
+
+The estimate only chooses which size to try first; it cannot prove that an
+in-limit mask fails. So the start is clamped to the largest scale that still
+fits inside `max_rows` and `max_columns`, measured from the real base mask:
+
+```
+s_start = max(1, min(s_est, max_rows/base_height_rows, max_columns/base_mask.width))
+```
+
+When the estimate would exceed the canvas, the engine therefore still tries
+an in-limit size (down to scale 1) and only fails if that genuinely cannot
+pack; it never raises `LAYOUT_LIMIT` solely because the estimate was out of
+limit.
+
 ## Automatic growth
 
 When an attempt fails, the engine asks the builder for a larger mask. The
 requested height is
-`ceil(base_height_rows * initial_scale * growth_factor ** attempt)`, with
-`growth_factor = 1.25` and at most `max_attempts = 12` attempts. A grown mask
-whose width exceeds `max_columns` (800) or height exceeds `max_rows` (600) is
-rejected with `LAYOUT_LIMIT`.
+`ceil(base_height_rows * s_start * growth_factor ** attempt)`, with
+`growth_factor = 1.25` and at most `max_attempts = 12` attempts. A grown
+mask whose width exceeds `max_columns` (800) or height exceeds `max_rows`
+(600) is rejected with `LAYOUT_LIMIT`.
 
 `actual_scale` is the realized ratio `mask.height / base_height_rows`, computed
 after height rounding, so a base of 32 rounded to 33 rows reports
@@ -80,7 +111,7 @@ returned in `plan.attempt_history`; on failure they are attached to
 
 ## Tests
 
-`tests/test_layout.py` (23 tests) covers:
+`tests/test_layout.py` (24 tests) covers:
 
 - one placement per token on circle, cat and code; placements stay in bounds,
   on allowed cells, non-overlapping and strictly ordered;
@@ -94,7 +125,10 @@ returned in `plan.attempt_history`; on failure they are attached to
 - contiguous-run reset after a separator;
 - the realized scale after rounded height;
 - the fragmented 178x32 CODE mask flowing tokens across many short spans;
-- a token wider than every base span succeeding only after growth;
+- a token wider than every base span getting a large enough start via the
+  estimate, succeeding on the first attempt without small retries;
+- an out-of-limit estimate still trying an in-limit canvas (4x8, 24
+  semicolons) and succeeding instead of raising `LAYOUT_LIMIT`;
 - a token that can never fit raising `LAYOUT_LIMIT` with the full history.
 
 ## Known limits

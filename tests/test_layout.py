@@ -178,21 +178,27 @@ def test_growth_retries_until_the_tokens_fit():
 
 
 def test_exhausted_attempts_raise_layout_limit_with_history():
-    # A single very wide token cannot fit any span of the small masks.
-    wide = Token(0, "identifier", "w" * 100, 100, 1, 1)
+    # A builder that always returns a 5-wide mask (ignoring the requested
+    # height) means the width-10 token can never fit; the loop runs all
+    # max_attempts and then raises LAYOUT_LIMIT with the full history.
+    wide = Token(0, "identifier", "w" * 10, 10, 1, 1)
     model = model_for((wide,))
     options = LayoutOptions(base_height_rows=4, max_attempts=3,
                             max_columns=800, max_rows=600)
 
+    def fixed_builder(shape_spec, size_request, font_metrics, *, ctx):
+        return _rect_mask(5)
+
     with pytest.raises(StageError) as exc_info:
         fit_layout(model, ShapeSpec("circle"), options,
-                   mask_builder=build_mask, join_checker=always_join, ctx=context())
+                   mask_builder=fixed_builder, join_checker=always_join, ctx=context())
 
     diagnostic: Diagnostic = exc_info.value.diagnostic
     assert diagnostic.code == ErrorCode.LAYOUT_LIMIT
     assert diagnostic.stage == "layout"
     history = diagnostic.details["attempt_history"]
     assert len(history) == 3
+    assert all(record.failure_token_index == 0 for record in history)
 
 
 def test_canvas_size_limit_raises_layout_limit():
@@ -263,7 +269,9 @@ def test_layout_stage_timeout_raises_layout_timeout():
         time.sleep(0.01)  # make the lexical decision consume the tiny budget
         return False
 
-    options = LayoutOptions(layout_timeout_s=0.001)
+    # The 50 ms budget covers the scale-1 base mask build of the estimate, yet
+    # is still exhausted during the first packing attempt (each join sleeps).
+    options = LayoutOptions(layout_timeout_s=0.05)
     with pytest.raises(StageError) as exc_info:
         fit_layout(model, ShapeSpec("circle"), options,
                    mask_builder=build_mask, join_checker=slow_checker, ctx=context())
@@ -439,9 +447,10 @@ def test_code_mask_packs_tokens_across_many_short_spans():
         assert any(start <= col < end for start, end in mask.spans[row])
 
 
-def test_token_wider_than_base_spans_succeeds_after_growth():
-    # A width-12 token fits no span of the h=4 circle (max 8) nor h=5 (max 10);
-    # growth to h=7 produces a 14-cell span, so the engine must retry and succeed.
+def test_longest_token_gets_a_large_enough_start_via_estimate():
+    # A width-12 token is wider than every span of the h=4 base mask (max 8).
+    # The width estimate (L/U = 12/8 = 1.5) moves the first attempt to h=6,
+    # whose full-width span holds the token, so no small-scale retries are wasted.
     wide = Token(0, "identifier", "w" * 12, 12, 1, 1)
     model = model_for((wide,))
     options = LayoutOptions(base_height_rows=4, max_columns=800, max_rows=600)
@@ -449,19 +458,16 @@ def test_token_wider_than_base_spans_succeeds_after_growth():
     plan = fit_layout(model, ShapeSpec("circle"), options,
                       mask_builder=build_mask, join_checker=always_join, ctx=context())
 
-    assert plan.attempt_count == 3
+    assert plan.attempt_count == 1
+    assert plan.mask.height == 6
     assert len(plan.placements) == 1
     row, col = plan.placements[0].row, plan.placements[0].col
     # All 12 cells are allowed and contained within a single span.
     assert all(plan.mask.allowed[row][col:col + 12])
     assert any(start <= col and col + 12 <= end
                for start, end in plan.mask.spans[row])
-    # The two failed attempts point at the wide token; the final record is success.
-    assert len(plan.attempt_history) == 3
-    assert all(record.failure_token_index == 0 for record in plan.attempt_history[:-1])
-    assert plan.attempt_history[-1].failure_token_index is None
 
-    # The grown plan still renders and passes the geometry contract.
+    # The plan still renders and passes the geometry contract.
     rendered = render_source(model, plan, FillOptions(), ctx=context())
     _, issues = check_geometry(model, plan, rendered, None, context())
     assert not issues.reasons, issues.reasons
@@ -469,8 +475,9 @@ def test_token_wider_than_base_spans_succeeds_after_growth():
 
 def test_long_token_that_never_fits_raises_layout_limit_with_history():
     # A token wider than the maximum canvas width (801 > max_columns 800) can
-    # never fit any valid mask, so it must fail with LAYOUT_LIMIT and the
-    # diagnostic details expose the full attempt history.
+    # never fit any valid mask. The estimate is clamped to the largest in-limit
+    # mask (h=400), which confirms the token cannot pack; the next growth
+    # exceeds the canvas, so it is diagnosed as LAYOUT_LIMIT with history.
     wide = Token(0, "identifier", "w" * 801, 801, 1, 1)
     model = model_for((wide,))
     options = LayoutOptions(base_height_rows=4, max_attempts=12,
@@ -484,4 +491,31 @@ def test_long_token_that_never_fits_raises_layout_limit_with_history():
     assert diagnostic.code == ErrorCode.LAYOUT_LIMIT
     history = diagnostic.details["attempt_history"]
     assert len(history) >= 1
-    assert all(record.failure_token_index == 0 for record in history)
+    # The first record is an in-limit packing failure (token 0); the later
+    # record is a canvas limit (token None).
+    assert all(record.failure_token_index in (None, 0) for record in history)
+    assert any(record.failure_token_index == 0 for record in history)
+
+
+def test_out_of_limit_estimate_still_tries_an_in_limit_canvas():
+    # Regression for the first estimate attempt: on a 4x8 canvas with 24
+    # single-cell semicolons, the area estimate asks for a 5-row mask (beyond
+    # max_rows). An out-of-limit estimate cannot prove the in-limit mask
+    # fails, so the start is clamped to scale 1 and the tokens must fit in the
+    # 4-row canvas instead of raising LAYOUT_LIMIT.
+    tokens = tuple(Token(i, "punct", ";", 1, 1, 1) for i in range(24))
+    model = model_for(tokens)
+    options = LayoutOptions(base_height_rows=4, max_attempts=12,
+                            max_columns=8, max_rows=4)
+
+    plan = fit_layout(model, ShapeSpec("circle"), options,
+                      mask_builder=build_mask, join_checker=always_join, ctx=context())
+
+    assert plan.attempt_count == 1
+    assert plan.mask.height == 4
+    assert plan.mask.width == 8
+    assert len(plan.placements) == 24
+    # Every placement sits on an allowed cell inside the 4-row canvas.
+    for placement in plan.placements:
+        assert 0 <= placement.row < 4
+        assert plan.mask.allowed[placement.row][placement.col]
