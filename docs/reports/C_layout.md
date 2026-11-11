@@ -14,30 +14,35 @@ locally; they report `DEPENDENCY_UNAVAILABLE` and are validated by the CI
 (macos-15, libclang 18.1.1). The C-owned `tests/test_layout.py` does not depend
 on libclang and runs fully here. See `C_environment.json`.
 
-The full suite on this machine is `112 failed, 186 passed, 31 skipped`, with
+The full suite on this machine is `112 failed, 187 passed, 31 skipped`, with
 the same 112 failing tests as the base (all pre-existing environment issues);
-the extra passing test is the new regression test. No new regression.
+the two extra passing tests are the row-cap and column-cap regression tests.
+No new regression.
 
 ## The implemented decision
 
 A scale-1 base mask is built first. From it the engine measures the longest
 fillable span `U` and the total fillable cells `A`; from the tokens it takes
 the longest token `L` and the total token width `T`. It estimates
-`s_est = max(1, initial_scale, L/U, sqrt(T/(eta*A)))` (`eta = 0.75`), then
-clamps it to the canvas:
+`s_est = max(1, initial_scale, L/U, sqrt(T/(eta*A)))` (`eta = 0.75`).
 
-`s_start = max(1, min(s_est, max_rows/base_height_rows, max_columns/base_mask.width))`.
-
-The loop requests `ceil(base_height_rows * s_start * growth_factor**attempt)`.
-An estimate that exceeds the canvas therefore still tries an in-limit size
-(down to scale 1) before any failure.
+A continuous canvas clamp gives an upper bound
+`min(max_rows/base_height_rows, max_columns/base_mask.width)`, but the
+builder rounds the height to an integer and derives the width from that
+discrete height. The candidate mask is therefore built and its real
+dimensions are verified, backing off row by row until it is in-limit, and the
+helper returns the verified start height (an int, at least the base height).
+The first attempt uses that height; later attempts grow geometrically. An
+estimate that exceeds the canvas therefore still tries an in-limit size
+before any failure.
 
 | Commit | Input | Command | Expected | Actual | Evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| 90ce252 | C-owned suite | `python -m pytest tests/test_layout.py -q` | All layout tests pass | 24 passed | C_tests.txt | PASS |
-| 90ce252 | 4x8 canvas, 24 semicolons | `test_out_of_limit_estimate_still_tries_an_in_limit_canvas` | Estimate wants 5 rows but is clamped to scale 1; tokens fit in 4 rows | 1 attempt, h=4, 24 placements | C_tests.txt | PASS |
+| 90ce252 | C-owned suite | `python -m pytest tests/test_layout.py -q` | All layout tests pass | 25 passed | C_tests.txt | PASS |
+| 90ce252 | 4x8 canvas, 24 semicolons | `test_out_of_limit_estimate_still_tries_an_in_limit_canvas` | Estimate wants 5 rows but is verified/clamped to scale 1; tokens fit in 4 rows | 1 attempt, h=4, 24 placements | C_tests.txt | PASS |
+| 90ce252 | 4x8 base, max_columns=9, 24 semicolons | `test_column_cap_rounding_still_tries_an_in_limit_canvas` | Continuous clamp (9/8=1.125) rounds to a 5x10 over-limit mask; back off to the in-limit 4x8 mask | 1 attempt, h=4, w=8, 24 placements | C_tests.txt | PASS |
 | 90ce252 | Width-12 token, circle h=4 | `test_longest_token_gets_a_large_enough_start_via_estimate` | Width estimate (L/U=1.5) moves first attempt to h=6 | 1 attempt, h=6, 12-cell span, geometry PASS | C_tests.txt | PASS |
-| 90ce252 | Width-801 token, limits 800x600 | `test_long_token_that_never_fits_raises_layout_limit_with_history` | Clamped to largest in-limit mask (h=400), packing fails, then growth exceeds canvas | LAYOUT_LIMIT, packing record (tok 0) + canvas record (tok None) | C_tests.txt | PASS |
+| 90ce252 | Width-801 token, limits 800x600 | `test_long_token_that_never_fits_raises_layout_limit_with_history` | Verified in-limit mask (h=400), packing fails, then growth exceeds canvas | LAYOUT_LIMIT, packing record (tok 0) + canvas record (tok None) | C_tests.txt | PASS |
 | 90ce252 | Width-10 token, fixed 5-wide fake builder | `test_exhausted_attempts_raise_layout_limit_with_history` | Token never fits, all attempts exhausted | 3 failed attempts, all point at token 0 | C_tests.txt | PASS |
 | 90ce252 | 60 tokens, circle h=6 | `test_growth_retries_until_the_tokens_fit` | Growth by 1.25, bounded, records failures then success | bounded attempts, last record success | C_tests.txt | PASS |
 | 90ce252 | 200 tokens, max_columns=10 | `test_canvas_size_limit_raises_layout_limit` | Growth rejected at the column limit | LAYOUT_LIMIT, "canvas limits" reason | C_tests.txt | PASS |
@@ -51,8 +56,9 @@ An estimate that exceeds the canvas therefore still tries an in-limit size
 
 | Assigned item | Where verified | Status |
 | --- | --- | --- |
-| Initial size estimate (s_start) | width-12 estimate; growth/timeout tests | PASS |
-| Canvas clamping (the #37 regression) | 4x8 in-limit regression test; width-801 test | PASS |
+| Initial size estimate (start height) | width-12 estimate; growth/timeout tests | PASS |
+| Canvas clamping (the #37 row-cap regression) | 4x8 in-limit regression test; width-801 test | PASS |
+| Column-cap rounding boundary | max_columns=9 column regression test | PASS |
 | Long tokens | width-12 estimate; width-801 impossible-canvas test | PASS |
 | Multi-span layout | CODE 178x32 short-span test; cat multi-span geometry | PASS |
 | Automatic growth (1.25, max 12) | growth and exhausted-attempt tests | PASS |
@@ -64,8 +70,8 @@ An estimate that exceeds the canvas therefore still tries an in-limit size
 ## Known limits
 
 - Packing is greedy in reading order, not globally optimal.
-- The estimate never starts below scale 1, so the minimum is still the base
-  height (32 rows); it cannot shrink the canvas for very short code.
+- The estimate never starts below the base height (32 rows); it cannot shrink
+  the canvas for very short code.
 - A token wider than the largest span the canvas can provide cannot be split
   and always fails with `LAYOUT_LIMIT`.
 - The local machine lacks libclang; the Clang-dependent suite is confirmed by

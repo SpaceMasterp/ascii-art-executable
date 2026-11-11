@@ -63,26 +63,38 @@ scales with the square of the scale).
 ### Clamping to the canvas
 
 The estimate only chooses which size to try first; it cannot prove that an
-in-limit mask fails. So the start is clamped to the largest scale that still
-fits inside `max_rows` and `max_columns`, measured from the real base mask:
+in-limit mask fails. A continuous upper bound is measured from the real base
+mask,
 
 ```
-s_start = max(1, min(s_est, max_rows/base_height_rows, max_columns/base_mask.width))
+max_in_limit = min(max_rows/base_height_rows, max_columns/base_mask.width)
+```
+
+but the builder rounds the requested height to an integer and derives the
+width from that discrete height, so the realized mask can still exceed the
+canvas at the boundary (for a circle, a 4x8 base and `max_columns=9` give
+`9/8 = 1.125`, which rounds to 5 rows and a 5x10 mask). The candidate mask
+is therefore built and its real dimensions are verified, backing off row by
+row until the mask is in-limit:
+
+```
+h_start = largest height <= ceil(base_height_rows * min(s_est, max_in_limit))
+          whose realized mask fits max_rows and max_columns
 ```
 
 When the estimate would exceed the canvas, the engine therefore still tries
-an in-limit size (down to scale 1) and only fails if that genuinely cannot
-pack; it never raises `LAYOUT_LIMIT` solely because the estimate was out of
-limit.
+an in-limit size (down to the base height) and only fails if that genuinely
+cannot pack; it never raises `LAYOUT_LIMIT` solely because the estimate was
+out of limit.
 
 ## Automatic growth
 
 When an attempt fails, the engine asks the builder for a larger mask. The
-requested height is
-`ceil(base_height_rows * s_start * growth_factor ** attempt)`, with
-`growth_factor = 1.25` and at most `max_attempts = 12` attempts. A grown
-mask whose width exceeds `max_columns` (800) or height exceeds `max_rows`
-(600) is rejected with `LAYOUT_LIMIT`.
+first attempt uses the verified start height; later attempts request
+`ceil(base_height_rows * (h_start/base_height_rows) * growth_factor ** attempt)`,
+with `growth_factor = 1.25` and at most `max_attempts = 12` attempts. A
+grown mask whose width exceeds `max_columns` (800) or height exceeds
+`max_rows` (600) is rejected with `LAYOUT_LIMIT`.
 
 `actual_scale` is the realized ratio `mask.height / base_height_rows`, computed
 after height rounding, so a base of 32 rounded to 33 rows reports
@@ -111,7 +123,7 @@ returned in `plan.attempt_history`; on failure they are attached to
 
 ## Tests
 
-`tests/test_layout.py` (24 tests) covers:
+`tests/test_layout.py` (25 tests) covers:
 
 - one placement per token on circle, cat and code; placements stay in bounds,
   on allowed cells, non-overlapping and strictly ordered;
@@ -129,6 +141,8 @@ returned in `plan.attempt_history`; on failure they are attached to
   estimate, succeeding on the first attempt without small retries;
 - an out-of-limit estimate still trying an in-limit canvas (4x8, 24
   semicolons) and succeeding instead of raising `LAYOUT_LIMIT`;
+- the column-cap rounding boundary (4x8 base, max_columns=9) backing off
+  from a 5x10 over-limit mask to the in-limit 4x8 mask;
 - a token that can never fit raising `LAYOUT_LIMIT` with the full history.
 
 ## Known limits

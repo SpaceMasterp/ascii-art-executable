@@ -17,9 +17,10 @@ Before the loop, a scale-1 base mask is built and the first scale is
 estimated as ``max(1, initial_scale, L/U, sqrt(T/(eta*A)))`` where ``L`` is
 the longest token, ``T`` the total token width, ``U`` the longest fillable
 span and ``A`` the fillable cells of the base mask (``eta = 0.75``).  The
-estimate is clamped to the largest scale that fits inside the canvas, so an
-estimate that would exceed the limit still tries an in-limit size; it never
-starts below scale 1.
+candidate mask is built and its real dimensions are verified against the
+canvas, backing off row by row when the builder's height rounding would
+exceed a limit, so an estimate that would exceed the limit still tries an
+in-limit size; it never starts below the base height.
 
 Cancellation and time budgets are enforced during both mask generation and
 packing, not just between attempts.  A stage-aware context is passed to the
@@ -195,14 +196,14 @@ def _with_history(exc: StageError, history) -> StageError:
     ))
 
 
-def _estimate_start_scale(
+def _estimate_start_height(
     model: SourceModel,
     shape_spec: ShapeSpec,
     options: LayoutOptions,
     mask_builder: MaskBuilder,
     layout_ctx,
-) -> float:
-    """Estimate the scale for the first packing attempt.
+) -> int:
+    """Estimate the height (rows) of the first packing attempt.
 
     A scale-1 base mask is built first so the estimate is measured from the
     real shape rather than guessed.  With the longest token ``L``, total token
@@ -212,12 +213,13 @@ def _estimate_start_scale(
     * ``s_area = sqrt(T / (eta * A))`` guarantees enough total area (area
       scales with the square of the scale), targeting an ``eta`` (0.75) fill.
 
-    The estimate is ``max(1, initial_scale, s_width, s_area)``.  It is then
-    clamped to the largest scale that still fits inside ``max_rows`` and
-    ``max_columns``: an out-of-limit estimate cannot prove that an in-limit
-    mask fails, so the first attempt must stay within the canvas.  The value
-    is never below 1, so the estimate only moves the start up, never below
-    the base.
+    The estimate is ``max(1, initial_scale, s_width, s_area)``.  A continuous
+    canvas clamp then gives an upper bound, but the builder rounds the
+    requested height and derives the width from that discrete height, so the
+    realized mask can still exceed the canvas at the boundary.  The candidate
+    mask is therefore built and verified, backing off row by row until it is
+    in-limit.  The base height is itself in-limit, so the returned height is
+    always at least ``base_height_rows`` and never below it.
     """
     base_mask = mask_builder(
         shape_spec, SizeRequest(options.base_height_rows),
@@ -237,12 +239,25 @@ def _estimate_start_scale(
     scale_area = math.sqrt(total_width / (_AREA_FILL_TARGET * fillable_cells))
     estimated = max(1.0, options.initial_scale, scale_width, scale_area)
 
-    # Largest scale that keeps the mask within the canvas, measured from the
-    # real base mask so width and row limits both hold.
+    # Continuous upper bound on the scale, measured from the real base mask.
     max_scale_rows = options.max_rows / options.base_height_rows
     max_scale_cols = options.max_columns / base_mask.width
     max_in_limit_scale = min(max_scale_rows, max_scale_cols)
-    return max(1.0, min(estimated, max_in_limit_scale))
+    candidate_height = max(
+        1, math.ceil(options.base_height_rows * min(estimated, max_in_limit_scale)))
+
+    # The builder's realized dimensions are discrete (it rounds the height and
+    # derives the width), so verify the actual mask and back off until it is
+    # in-limit. The base mask is guaranteed in-limit, so this always terminates.
+    height = candidate_height
+    while height > options.base_height_rows:
+        candidate_mask = mask_builder(
+            shape_spec, SizeRequest(height), options.font_metrics, ctx=layout_ctx)
+        if (candidate_mask.width <= options.max_columns
+                and candidate_mask.height <= options.max_rows):
+            return height
+        height -= 1
+    return options.base_height_rows
 
 
 def fit_layout(
@@ -285,16 +300,18 @@ def fit_layout(
     # A stage-aware context enforces the budget while the mask is built.
     layout_ctx = _LayoutContext(ctx, stage_deadline)
 
-    # Build a scale-1 base mask and estimate the first scale from the longest
+    # Build a scale-1 base mask and estimate the first height from the longest
     # token and total area, so the longest token avoids pointless small-scale
-    # retries. The estimate is clamped to the canvas, so an out-of-limit
-    # estimate still tries an in-limit size. A failure during the base mask
-    # build (timeout/cancel) still gets the history key.
+    # retries. The estimate is verified against the builder's real dimensions
+    # and kept inside the canvas, so an out-of-limit estimate still tries an
+    # in-limit size. A failure during the base mask build (timeout/cancel)
+    # still gets the history key.
     try:
-        start_scale = _estimate_start_scale(
+        start_height = _estimate_start_height(
             model, shape_spec, options, mask_builder, layout_ctx)
     except StageError as exc:
         raise _with_history(exc, history) from exc
+    start_scale = start_height / options.base_height_rows
 
     for attempt in range(options.max_attempts):
         attempt_started = ctx.clock()
@@ -302,8 +319,13 @@ def fit_layout(
         attempt_recorded = False
         try:
             ctx.check()
-            requested_scale = start_scale * (options.growth_factor ** attempt)
-            height = max(1, math.ceil(options.base_height_rows * requested_scale))
+            # The first attempt uses the verified in-limit height; later
+            # attempts grow geometrically from the start scale.
+            if attempt == 0:
+                height = start_height
+            else:
+                requested_scale = start_scale * (options.growth_factor ** attempt)
+                height = max(1, math.ceil(options.base_height_rows * requested_scale))
 
             mask = mask_builder(
                 shape_spec, SizeRequest(height), options.font_metrics, ctx=layout_ctx)

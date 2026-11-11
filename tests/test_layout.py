@@ -519,3 +519,29 @@ def test_out_of_limit_estimate_still_tries_an_in_limit_canvas():
     for placement in plan.placements:
         assert 0 <= placement.row < 4
         assert plan.mask.allowed[placement.row][placement.col]
+
+
+def test_column_cap_rounding_still_tries_an_in_limit_canvas():
+    # Regression for the column boundary: with a 4x8 base mask and
+    # max_columns=9, the continuous clamp (9/8 = 1.125) rounds the height up
+    # to 5 rows, and the realized circle mask at 5 rows is 5x10 — over the
+    # 9-column cap. The estimate must account for the builder's real
+    # dimensions after rounding and back off to the in-limit 4x8 mask that
+    # fits all 24 tokens, instead of raising LAYOUT_LIMIT.
+    tokens = tuple(Token(i, "punct", ";", 1, 1, 1) for i in range(24))
+    model = model_for(tokens)
+    options = LayoutOptions(base_height_rows=4, max_attempts=12,
+                            max_columns=9, max_rows=600)
+
+    plan = fit_layout(model, ShapeSpec("circle"), options,
+                      mask_builder=build_mask, join_checker=always_join, ctx=context())
+
+    assert plan.attempt_count == 1
+    assert plan.mask.height == 4
+    assert plan.mask.width == 8
+    assert plan.mask.width <= 9
+    assert len(plan.placements) == 24
+    # Every placement sits on an allowed cell inside the in-limit mask.
+    for placement in plan.placements:
+        assert 0 <= placement.row < plan.mask.height
+        assert plan.mask.allowed[placement.row][placement.col]
