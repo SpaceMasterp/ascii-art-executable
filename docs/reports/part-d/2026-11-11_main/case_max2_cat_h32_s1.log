@@ -1,0 +1,13 @@
+head: 90ce252914e176acfe895a1e8e5b9074b174681c
+branch: part-d/evidence-refresh dirty: no
+case: max2_cat (32 rows, scale 1)
+token: PASS
+geometry: PASS
+compile: PASS
+behavior: NOT_RUN (NO_FIXTURE)
+coverage: 0.9977 (token 0.0258, block 0.1748, line 0.7971)
+comment_cells: {'block': 230, 'line': 1049}
+attempts: 1
+clang -c rc: 0
+diagnostics: -
+stderr: 
