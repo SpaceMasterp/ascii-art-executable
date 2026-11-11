@@ -124,8 +124,8 @@ is available. Evidence records the full HEAD, branch, dirty flag and base.
   scale, duration and the independent compile result;
 - `D_cases.md`, the run-local table; `D_checklist.md` summarizes the DoD.
 
-Measured at HEAD `fff14b9ce23c4da0d64ab5aac7bf38482a601ea2`
-(branch `part-d-real-layout`, dirty: no, base `main@94cd53d`):
+Measured at HEAD `90ce252914e176acfe895a1e8e5b9074b174681c`
+(branch `part-d/evidence-refresh`, dirty: no, base `main@90ce252`):
 
 | metric | result |
 |---|---|
