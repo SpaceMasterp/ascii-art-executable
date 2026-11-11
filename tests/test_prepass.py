@@ -42,6 +42,7 @@ def test_cli_file_report(tmp_path):
     data = json.loads(report.read_text())
     assert data['status'] == 'OK'
     assert data['font_id'] == 'Roboto Mono Regular'
+    assert data['cell_aspect'] == 0.5
     assert data['prepass']['selected'] == 'f'
     assert data['prepass']['ignored_lines'][0]['start_line'] == 1
     assert data['prepass']['validation_scope']
